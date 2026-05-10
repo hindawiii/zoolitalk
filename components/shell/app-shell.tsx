@@ -84,10 +84,16 @@ export function AppShell() {
   const ActiveModule = tabComponents[activeTab]
 
   return (
-    <div className="relative flex flex-col min-h-dvh bg-background w-full max-w-full overflow-x-hidden">
+    <div className="relative flex flex-col min-h-dvh bg-background w-full max-w-full overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 bg-card/80 backdrop-blur-md border-b w-full max-w-full">
-        <div className="flex items-center gap-2">
+      <header 
+        className={cn(
+          "sticky top-0 z-30 flex items-center justify-between h-14 px-4 bg-card/80 backdrop-blur-md border-b w-full max-w-full",
+          isRTL && "flex-row-reverse"
+        )}
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
           <RakobaLogo size="sm" />
           <h1 className={cn(
             'text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent',

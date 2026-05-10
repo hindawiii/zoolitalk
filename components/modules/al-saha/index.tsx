@@ -14,6 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { useLanguage } from '@/components/providers/language-provider'
 
 type SegmentId = 'feed' | 'trends'
 
@@ -30,6 +31,7 @@ const segments: Segment[] = [
 export default function AlSaha() {
   const [activeSegment, setActiveSegment] = React.useState<SegmentId>('feed')
   const [showRadar, setShowRadar] = React.useState(false)
+  const { isRTL } = useLanguage()
 
   const renderSegmentContent = () => {
     switch (activeSegment) {
@@ -43,11 +45,11 @@ export default function AlSaha() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden bg-[#F5F5DC] dark:bg-background">
+    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden bg-[#F5F5DC] dark:bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Sticky Header with Segmented Control */}
       <div className="sticky top-0 z-30 bg-[#1a3a18] dark:bg-[#0f1f0e] shadow-md">
         {/* Title Bar with Radar Button */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#2D5A27]/30">
+        <div className={cn("flex items-center justify-between px-4 py-3 border-b border-[#2D5A27]/30", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
           <h1 className="text-xl font-bold text-[#F5F0E1] font-arabic">
             الساحة
           </h1>
@@ -71,7 +73,7 @@ export default function AlSaha() {
               className="absolute bottom-0 h-0.5 bg-[#C9A227] rounded-full"
               style={{
                 width: `calc(50% - 16px)`,
-                left: activeSegment === 'feed' ? '8px' : 'calc(50% + 8px)',
+                [isRTL ? 'right' : 'left']: activeSegment === 'feed' ? '8px' : 'calc(50% + 8px)',
               }}
               transition={{ type: 'spring', stiffness: 500, damping: 35 }}
             />
@@ -115,7 +117,7 @@ export default function AlSaha() {
       <Sheet open={showRadar} onOpenChange={setShowRadar}>
         <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl p-0">
           <SheetHeader className="sticky top-0 z-10 bg-[#1a3a18] dark:bg-[#0f1f0e] px-4 py-3 rounded-t-2xl">
-            <div className="flex items-center gap-2">
+            <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
               <Radar className="h-5 w-5 text-[#C9A227]" />
               <SheetTitle className="font-arabic text-[#F5F0E1] text-lg">
                 رادار الراكوبة

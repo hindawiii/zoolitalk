@@ -69,13 +69,13 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
         )}
         
         {/* Badges */}
-        <div className="absolute top-2 flex gap-1 start-2">
+        <div className={cn("absolute top-2 flex gap-1", isRTL ? "end-2 flex-row-reverse" : "start-2")}>
           <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm text-xs">
             {isRTL ? categoryLabel.ar : categoryLabel.en}
           </Badge>
           {listing.isBarter && (
-            <Badge className="bg-accent text-accent-foreground text-xs">
-              <RefreshCw className="h-3 w-3 me-1" />
+            <Badge className={cn("bg-accent text-accent-foreground text-xs", isRTL && "flex-row-reverse")}>
+              <RefreshCw className={cn("h-3 w-3", isRTL ? "ms-1" : "me-1")} />
               {isRTL ? 'مقايضة' : 'Barter'}
             </Badge>
           )}
@@ -85,7 +85,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background end-2"
+          className={cn("absolute top-2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background", isRTL ? "start-2" : "end-2")}
           onClick={(e) => {
             e.stopPropagation()
             toggleFavorite(listing.id)
@@ -101,9 +101,9 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
       </div>
 
       {/* Content */}
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Price */}
-        <div className="flex items-center justify-between">
+        <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
           <span className="font-bold text-lg text-primary">
             {formatPrice(listing.price)}
           </span>
@@ -115,14 +115,14 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
         {/* Title */}
         <h3 className={cn(
           'font-medium line-clamp-2 text-sm',
-          isRTL && 'font-arabic'
+          isRTL && 'font-arabic text-end'
         )}>
           {isRTL ? listing.titleAr : listing.title}
         </h3>
 
         {/* Location */}
         {listing.location && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className={cn("flex items-center gap-1 text-xs text-muted-foreground", isRTL && "flex-row-reverse justify-end")}>
             <MapPin className="h-3 w-3" />
             <span className={cn(isRTL && 'font-arabic')}>
               {isRTL ? listing.locationAr || listing.location : listing.location}
@@ -131,7 +131,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
         )}
 
         {/* Seller */}
-        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+        <div className={cn("flex items-center gap-2 pt-2 border-t border-border/50", isRTL && "flex-row-reverse")}>
           <Avatar className="h-6 w-6">
             <AvatarImage src={listing.sellerAvatar} alt={listing.sellerName} />
             <AvatarFallback className="text-xs bg-primary/10">

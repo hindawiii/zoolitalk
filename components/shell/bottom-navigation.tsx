@@ -39,8 +39,8 @@ export function BottomNavigation() {
   }
 
   return (
-    <nav className="bottom-nav w-full max-w-full overflow-x-hidden" role="navigation" aria-label="Main navigation">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2 w-full">
+    <nav className="bottom-nav w-full max-w-full overflow-x-hidden" role="navigation" aria-label="Main navigation" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className={cn("flex items-center justify-around h-16 max-w-lg mx-auto px-2 w-full", isRTL && "flex-row-reverse")}>
         {navItems.map((item) => {
           const isActive = activeTab === item.id
           const Icon = item.icon

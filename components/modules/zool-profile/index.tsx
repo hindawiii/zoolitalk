@@ -373,7 +373,7 @@ export default function ZoolProfile() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full bg-background w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col h-full bg-background w-full max-w-full overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
         <ScrollArea className="flex-1">
           {/* Cover Photo */}
           <div className="relative h-40 bg-gradient-to-br from-[#2D5A27] via-[#2D5A27]/80 to-emerald-700">
@@ -391,7 +391,7 @@ export default function ZoolProfile() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 start-3"
+                className={cn("absolute top-3 bg-background/30 backdrop-blur-sm hover:bg-background/50", isRTL ? "end-3" : "start-3")}
                 onClick={handleGoBack}
               >
                 <BackIcon className="h-5 w-5 text-white" />
@@ -403,7 +403,7 @@ export default function ZoolProfile() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 end-3"
+                className={cn("absolute top-3 bg-background/30 backdrop-blur-sm hover:bg-background/50", isRTL ? "start-3" : "end-3")}
                 onClick={() => setSettingsOpen(true)}
               >
                 <Settings className="h-5 w-5 text-white" />
@@ -415,7 +415,7 @@ export default function ZoolProfile() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute bottom-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 text-white gap-1.5 end-3"
+                className={cn("absolute bottom-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 text-white gap-1.5", isRTL ? "start-3 flex-row-reverse" : "end-3")}
               >
                 <Camera className="h-4 w-4" />
                 <span className="text-xs">{isRTL ? 'تغيير' : 'Edit'}</span>
@@ -483,7 +483,7 @@ export default function ZoolProfile() {
             </div>
 
             {/* Status Badges Row */}
-            <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+            <div className={cn("flex items-center justify-center gap-2 mt-3 flex-wrap", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
               {/* Social Status - Dropdown for own profile, Badge for others */}
               {isOwnProfile ? (
                 <DropdownMenu>
@@ -570,14 +570,14 @@ export default function ZoolProfile() {
             )}
 
             {/* Location & Joined */}
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mt-2">
+            <div className={cn("flex items-center justify-center gap-4 text-xs text-muted-foreground mt-2", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
               {displayUser?.location && (
-                <span className="flex items-center gap-1 font-arabic">
+                <span className={cn("flex items-center gap-1 font-arabic", isRTL && "flex-row-reverse")}>
                   <MapPin className="h-3 w-3" />
                   {displayUser.location}
                 </span>
               )}
-              <span className="flex items-center gap-1">
+              <span className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
                 <Calendar className="h-3 w-3" />
                 {isRTL ? 'انضم في 2024' : 'Joined 2024'}
               </span>
@@ -601,11 +601,11 @@ export default function ZoolProfile() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 mt-4">
+            <div className={cn("flex gap-3 mt-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
               {isOwnProfile ? (
                 <>
                   <Button 
-                    className="flex-1 gap-2" 
+                    className={cn("flex-1 gap-2", isRTL && "flex-row-reverse")} 
                     variant="outline"
                     onClick={() => setSettingsOpen(true)}
                   >
@@ -613,7 +613,7 @@ export default function ZoolProfile() {
                     <span className="font-arabic">{isRTL ? 'تعديل الملف' : 'Edit Profile'}</span>
                   </Button>
                   <Button 
-                    className="flex-1 gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white"
+                    className={cn("flex-1 gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white", isRTL && "flex-row-reverse")}
                     onClick={() => triggerGift('jabana', displayUser?.name || 'User')}
                   >
                     <Gift className="h-4 w-4" />
@@ -623,7 +623,7 @@ export default function ZoolProfile() {
               ) : (
                 <>
                   <Button 
-                    className="flex-1 gap-2" 
+                    className={cn("flex-1 gap-2", isRTL && "flex-row-reverse")} 
                     variant="outline"
                     onClick={handleStartChat}
                   >
@@ -631,7 +631,7 @@ export default function ZoolProfile() {
                     <span className="font-arabic">{isRTL ? 'مراسلة' : 'Message'}</span>
                   </Button>
                   <Button 
-                    className="flex-1 gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white"
+                    className={cn("flex-1 gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white", isRTL && "flex-row-reverse")}
                     onClick={() => triggerGift('jabana', displayUser?.name || 'User')}
                   >
                     <Gift className="h-4 w-4" />
@@ -666,7 +666,7 @@ export default function ZoolProfile() {
               animate={{ opacity: 1 }}
               className="px-4 py-4 border-t"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
                 <h3 className="font-bold font-arabic text-[#2D5A27]">
                   {isRTL ? 'متحف الساحة' : 'Al-Saha Museum'}
                 </h3>
@@ -700,7 +700,7 @@ export default function ZoolProfile() {
               animate={{ opacity: 1 }}
               className="px-4 py-4 border-t"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
                 <h3 className="font-bold font-arabic text-[#2D5A27]">
                   {isRTL ? 'هدايا الكرم' : 'Gift Showcase'}
                 </h3>

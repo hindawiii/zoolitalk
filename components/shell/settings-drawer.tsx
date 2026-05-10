@@ -99,11 +99,11 @@ export function SettingsDrawer() {
     return (
 <Drawer open={isSettingsOpen} onOpenChange={setSettingsOpen} direction={isRTL ? 'right' : 'left'}>
         <DrawerContent className={cn('w-full max-w-full overflow-x-hidden', isRTL && 'font-arabic')}>
-          <DrawerHeader className="flex flex-row items-center gap-3 border-b w-full">
+          <DrawerHeader className={cn("flex flex-row items-center gap-3 border-b w-full", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
             <Button variant="ghost" size="icon" onClick={() => setShowBlocklist(false)}>
               {isRTL ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
             </Button>
-            <div>
+            <div className={cn(isRTL && "text-end")}>
               <DrawerTitle>{t('settings.blocklist')}</DrawerTitle>
               <DrawerDescription className="sr-only">
                 {isRTL ? 'قائمة المستخدمين المحظورين' : 'List of blocked users'}
@@ -121,9 +121,10 @@ export function SettingsDrawer() {
                 {blockedUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
+                    className={cn("flex items-center justify-between p-3 rounded-lg bg-secondary/50", isRTL && "flex-row-reverse")}
+                    dir={isRTL ? 'rtl' : 'ltr'}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>{user.name[0]}</AvatarFallback>
@@ -151,8 +152,8 @@ export function SettingsDrawer() {
     <Drawer open={isSettingsOpen} onOpenChange={setSettingsOpen} direction={isRTL ? 'right' : 'left'}>
       <DrawerContent className={cn(isRTL && 'font-arabic')}>
         <DrawerHeader className="border-b">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className={cn(isRTL && "text-end")}>
               <DrawerTitle className="text-xl">{t('settings.title')}</DrawerTitle>
               <DrawerDescription className="sr-only">
                 {isRTL ? 'إعدادات التطبيق والحساب' : 'App and account settings'}
@@ -170,14 +171,14 @@ export function SettingsDrawer() {
           <div className="p-4 pb-8 space-y-6">
             {/* Profile Header */}
             {currentUser && (
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary/50">
+              <div className={cn("flex items-center gap-4 p-4 rounded-xl bg-secondary/50", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
                 <Avatar className="h-14 w-14 border-2 border-primary">
                   <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                     {(isRTL ? currentUser.nameAr : currentUser.name)[0]}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
+                <div className={cn("flex-1 min-w-0", isRTL && "text-end")}>
                   <h3 className="font-semibold truncate">
                     {isRTL ? currentUser.nameAr : currentUser.name}
                   </h3>
@@ -216,13 +217,14 @@ export function SettingsDrawer() {
                 {/* Language Toggle */}
                 <button
                   onClick={handleLanguageToggle}
-                  className="w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors"
+                  className={cn("w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors", isRTL && "flex-row-reverse")}
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                     <Globe className="h-5 w-5 text-muted-foreground" />
                     <span>{t('settings.language')}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                     <span className="text-sm text-muted-foreground">
                       {language === 'ar' ? 'العربية' : 'English'}
                     </span>
@@ -233,8 +235,8 @@ export function SettingsDrawer() {
                 </button>
                 <Separator />
                 {/* Theme Toggle */}
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
+                <div className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                     {isDark ? (
                       <Moon className="h-5 w-5 text-muted-foreground" />
                     ) : (
@@ -249,8 +251,8 @@ export function SettingsDrawer() {
                 </div>
                 <Separator />
                 {/* Data Saver */}
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
+                <div className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                     <Wifi className="h-5 w-5 text-muted-foreground" />
                     <span>{t('settings.dataSaver')}</span>
                   </div>
@@ -270,13 +272,14 @@ export function SettingsDrawer() {
               <div className="space-y-1 rounded-xl bg-card border overflow-hidden">
                 <button
                   onClick={() => setShowBlocklist(true)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors"
+                  className={cn("w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors", isRTL && "flex-row-reverse")}
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                     <UserX className="h-5 w-5 text-muted-foreground" />
                     <span>{t('settings.blocklist')}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}>
                     <span className="text-sm text-muted-foreground">
                       {blockedUsers.length}
                     </span>
@@ -284,8 +287,8 @@ export function SettingsDrawer() {
                   </div>
                 </button>
                 <Separator />
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
+                <div className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                     <Eye className="h-5 w-5 text-muted-foreground" />
                     <span>{t('settings.onlineStatus')}</span>
                   </div>
@@ -303,8 +306,8 @@ export function SettingsDrawer() {
                 {t('settings.about')}
               </h4>
               <div className="space-y-1 rounded-xl bg-card border overflow-hidden">
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
+                <div className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+                  <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
                     <Info className="h-5 w-5 text-muted-foreground" />
                     <span>{t('settings.version')}</span>
                   </div>
@@ -323,7 +326,7 @@ export function SettingsDrawer() {
               <div className="space-y-1 rounded-xl bg-card border border-destructive/20 overflow-hidden">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button className="w-full flex items-center gap-3 p-4 text-destructive hover:bg-destructive/10 transition-colors">
+                    <button className={cn("w-full flex items-center gap-3 p-4 text-destructive hover:bg-destructive/10 transition-colors", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
                       <Trash2 className="h-5 w-5" />
                       <span>{t('settings.deleteAccount')}</span>
                     </button>
@@ -349,8 +352,9 @@ export function SettingsDrawer() {
             {/* Logout Button */}
             <Button
               variant="outline"
-              className="w-full gap-2"
+              className={cn("w-full gap-2", isRTL && "flex-row-reverse")}
               onClick={handleLogout}
+              dir={isRTL ? 'rtl' : 'ltr'}
             >
               <LogOut className="h-4 w-4" />
               {t('settings.logout')}
@@ -387,8 +391,8 @@ function SettingsRow({
 
   if (type === 'toggle') {
     return (
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
+      <div className={cn("flex items-center justify-between p-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
           <Icon className="h-5 w-5 text-muted-foreground" />
           <span>{label}</span>
         </div>
@@ -402,10 +406,12 @@ function SettingsRow({
       onClick={onClick}
       className={cn(
         'w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors',
-        type === 'danger' && 'text-destructive hover:bg-destructive/10'
+        type === 'danger' && 'text-destructive hover:bg-destructive/10',
+        isRTL && 'flex-row-reverse'
       )}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div className="flex items-center gap-3">
+      <div className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}>
         <Icon className="h-5 w-5 text-muted-foreground" />
         <span>{label}</span>
       </div>

@@ -20,7 +20,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
 import { ListingCard } from './listing-card'
 import { ListingDetail } from './listing-detail'
 import { CreateListingSheet } from './create-listing-sheet'
@@ -85,7 +84,7 @@ export default function SouqAlJumaa() {
   const selectedListing = listings.find((l) => l.id === selectedListingId)
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Detail View */}
       <AnimatePresence>
         {selectedListing && (
@@ -105,14 +104,14 @@ export default function SouqAlJumaa() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="p-4 space-y-3 border-b bg-card/50">
-        <div className="flex items-center justify-between">
+      <div className="p-4 space-y-3 border-b bg-card/50" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={cn("flex items-center justify-between", isRTL && "flex-row-reverse")}>
           <h2 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>
             {t('souq.title')}
           </h2>
           <Button
             size="sm"
-            className="gap-1.5 bg-primary hover:bg-primary/90"
+            className={cn("gap-1.5 bg-primary hover:bg-primary/90", isRTL && "flex-row-reverse")}
             onClick={() => setShowCreateListing(true)}
           >
             <Plus className="h-4 w-4" />
@@ -122,28 +121,28 @@ export default function SouqAlJumaa() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3" />
+          <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isRTL ? "end-3" : "start-3")} />
           <Input
             placeholder={t('souq.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 rounded-full bg-secondary/50 ps-10 pe-12"
+            className={cn("h-10 rounded-full bg-secondary/50", isRTL ? "pe-10 ps-12" : "ps-10 pe-12")}
           />
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1/2 -translate-y-1/2 h-8 w-8 end-1"
+            className={cn("absolute top-1/2 -translate-y-1/2 h-8 w-8", isRTL ? "start-1" : "end-1")}
           >
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Quick filters */}
-        <div className="flex gap-2">
+        <div className={cn("flex gap-2", isRTL && "flex-row-reverse")}>
           <Button
             variant={showBarterOnly ? 'default' : 'outline'}
             size="sm"
-            className="gap-1.5"
+            className={cn("gap-1.5", isRTL && "flex-row-reverse")}
             onClick={() => setShowBarterOnly(!showBarterOnly)}
           >
             <ArrowLeftRight className="h-4 w-4" />
@@ -152,7 +151,7 @@ export default function SouqAlJumaa() {
           <Button
             variant={showAuctionsOnly ? 'default' : 'outline'}
             size="sm"
-            className="gap-1.5"
+            className={cn("gap-1.5", isRTL && "flex-row-reverse")}
             onClick={() => setShowAuctionsOnly(!showAuctionsOnly)}
           >
             <Gavel className="h-4 w-4" />
@@ -162,8 +161,8 @@ export default function SouqAlJumaa() {
       </div>
 
       {/* Categories */}
-      <div className="px-4 py-3 border-b overflow-x-auto overflow-y-hidden w-full max-w-full scrollbar-hide">
-        <div className="flex gap-2 w-max">
+      <div className="px-4 py-3 border-b overflow-x-auto overflow-y-hidden w-full max-w-full scrollbar-hide" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={cn("flex gap-2 w-max", isRTL && "flex-row-reverse")}
           {/* All category */}
           <button
             onClick={() => setActiveCategory('all')}

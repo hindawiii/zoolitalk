@@ -275,7 +275,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   if (!chat) return null
 
   return (
-    <div className="flex flex-col h-full bg-background w-full max-w-full overflow-hidden relative">
+    <div className="flex flex-col h-full bg-background w-full max-w-full overflow-hidden relative" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Background Pattern - Click to change wallpaper */}
       <div 
         className="absolute inset-0 cursor-pointer" 
@@ -286,14 +286,14 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
       </div>
       
       {/* Header */}
-      <header className="flex items-center gap-3 px-2 py-2 bg-card/95 backdrop-blur-sm border-b relative z-10">
+      <header className={cn("flex items-center gap-3 px-2 py-2 bg-card/95 backdrop-blur-sm border-b relative z-10", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackIcon className="h-5 w-5" />
         </Button>
         
         {/* Clickable Avatar + Name to open profile */}
         <button 
-          className="flex items-center gap-3 flex-1 min-w-0 hover:bg-secondary/50 rounded-lg p-1 -m-1 transition-colors"
+          className={cn("flex items-center gap-3 flex-1 min-w-0 hover:bg-secondary/50 rounded-lg p-1 -m-1 transition-colors", isRTL && "flex-row-reverse")}
           onClick={() => chat.type === 'private' && chat.participants?.[0] && onOpenProfile?.(chat.participants[0])}
         >
           <div className="relative flex-shrink-0">
@@ -306,7 +306,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             )}
           </div>
 
-          <div className="flex-1 min-w-0 text-start">
+          <div className={cn("flex-1 min-w-0", isRTL ? "text-end" : "text-start")}>
             <h3 className={cn('font-semibold truncate', isRTL && 'font-arabic')}>
               {isRTL ? chat.nameAr : chat.name}
             </h3>
@@ -316,7 +316,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
           </div>
         </button>
 
-        <div className="flex items-center gap-1">
+        <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
           <Button variant="ghost" size="icon">
             <Phone className="h-5 w-5" />
           </Button>
@@ -439,9 +439,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden border-t bg-secondary/30 relative z-10"
           >
-            <div className="flex items-center gap-2 px-4 py-2">
+            <div className={cn("flex items-center gap-2 px-4 py-2", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
               <Reply className="h-4 w-4 text-primary" />
-              <div className="flex-1 min-w-0">
+              <div className={cn("flex-1 min-w-0", isRTL && "text-end")}>
                 <p className="text-xs font-medium text-primary">{replyingTo.senderName}</p>
                 <p className="text-sm text-muted-foreground truncate">{replyingTo.content}</p>
               </div>
@@ -455,12 +455,12 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
 
       {/* Sticky Input Area */}
       <div 
-        className="sticky bottom-0 left-0 right-0 p-3 border-t bg-card/95 backdrop-blur-sm z-20"
+        className={cn("sticky bottom-0 p-3 border-t bg-card/95 backdrop-blur-sm z-20", isRTL ? "right-0 left-0" : "left-0 right-0")}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {isRecording ? (
           <motion.div
-            className="flex items-center gap-3"
+            className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleDragEnd}
@@ -667,7 +667,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               className="absolute bottom-0 inset-x-0 bg-card rounded-t-2xl p-4 max-h-[60vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className={cn("flex items-center justify-between mb-4", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
                 <h3 className={cn('text-lg font-semibold', isRTL && 'font-arabic')}>
                   {isRTL ? 'خلفية المحادثة' : 'Chat Wallpaper'}
                 </h3>
@@ -767,15 +767,15 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
       {/* Reply Icon */}
       <AnimatePresence>
         {showReplyIcon && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className={cn(
-              'absolute top-1/2 -translate-y-1/2 z-10',
-              isSent ? (isRTL ? 'right-full mr-2' : 'left-full ml-2') : (isRTL ? 'left-full ml-2' : 'right-full mr-2')
-            )}
-          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              className={cn(
+                'absolute top-1/2 -translate-y-1/2 z-10',
+                isSent ? (isRTL ? 'start-full ms-2' : 'end-full me-2') : (isRTL ? 'end-full me-2' : 'start-full ms-2')
+              )}
+            >
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
               <Reply className="h-4 w-4 text-primary" />
             </div>

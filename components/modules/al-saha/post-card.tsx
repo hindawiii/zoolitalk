@@ -131,13 +131,16 @@ export function PostCard({ post }: PostCardProps) {
   const currentReaction = reactions.find((r) => r.type === post.userReaction)
 
   return (
-    <article className="py-4 relative">
+    <article className="py-4 relative" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Countdown Badge for Timed Posts */}
       {countdown && post.expiry !== 'permanent' && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-orange-500/90 text-white rounded-full text-xs font-arabic"
+          className={cn(
+            "absolute top-2 z-10 flex items-center gap-1 px-2 py-1 bg-orange-500/90 text-white rounded-full text-xs font-arabic",
+            isRTL ? "right-2" : "left-2"
+          )}
         >
           <Clock className="h-3 w-3" />
           <span>{countdown}</span>
@@ -145,18 +148,18 @@ export function PostCard({ post }: PostCardProps) {
       )}
       
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 mb-3">
+      <div className={cn("flex items-center gap-3 px-4 mb-3", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
         <Avatar className="h-10 w-10">
           <AvatarImage src={post.authorAvatar} alt={post.authorName} />
           <AvatarFallback className="bg-primary/10 text-primary">
             {(isRTL ? post.authorNameAr : post.authorName)[0]}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0">
+        <div className={cn("flex-1 min-w-0", isRTL && "text-end")}>
           <p className={cn('font-semibold text-sm', isRTL && 'font-arabic')}>
             {isRTL ? post.authorNameAr : post.authorName}
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", isRTL && "flex-row-reverse justify-end")}>
             <span>{formatTime(post.timestamp)}</span>
             {post.location && (
               <>
@@ -173,17 +176,17 @@ export function PostCard({ post }: PostCardProps) {
               <MoreHorizontal className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-            <DropdownMenuItem>{isRTL ? 'حفظ' : 'Save'}</DropdownMenuItem>
-            <DropdownMenuItem>{isRTL ? 'إبلاغ' : 'Report'}</DropdownMenuItem>
-            <DropdownMenuItem>{isRTL ? 'إخفاء' : 'Hide'}</DropdownMenuItem>
+          <DropdownMenuContent align={isRTL ? 'start' : 'end'} dir={isRTL ? 'rtl' : 'ltr'}>
+            <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? 'حفظ' : 'Save'}</DropdownMenuItem>
+            <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? 'إبلاغ' : 'Report'}</DropdownMenuItem>
+            <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? 'إخفاء' : 'Hide'}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       {/* Content */}
-      <div className="px-4 mb-3">
-        <p className={cn('text-sm leading-relaxed', isRTL && 'font-arabic')}>
+      <div className="px-4 mb-3" dir={isRTL ? 'rtl' : 'ltr'}>
+        <p className={cn('text-sm leading-relaxed', isRTL && 'font-arabic text-end')}>
           {isRTL ? post.contentAr : post.content}
         </p>
       </div>
@@ -251,8 +254,8 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Reaction Stats */}
       {totalReactions > 0 && (
-        <div className="px-4 mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="flex -space-x-1">
+        <div className={cn("px-4 mb-2 flex items-center gap-2 text-xs text-muted-foreground", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className={cn("flex", isRTL ? "space-x-reverse -space-x-1" : "-space-x-1")}>
             {reactions
               .filter((r) => post.reactions[r.type] > 0)
               .slice(0, 3)
@@ -265,8 +268,8 @@ export function PostCard({ post }: PostCardProps) {
       )}
 
       {/* Actions */}
-      <div className="px-4 flex items-center justify-between">
-        <div className="flex items-center gap-1">
+      <div className={cn("px-4 flex items-center justify-between", isRTL && "flex-row-reverse")} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className={cn("flex items-center gap-1", isRTL && "flex-row-reverse")}>
           {/* Like button with reactions */}
           <div className="relative">
             <Button
@@ -302,7 +305,7 @@ export function PostCard({ post }: PostCardProps) {
                   initial={{ opacity: 0, scale: 0.8, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  className="absolute bottom-full mb-2 left-0 flex gap-1 p-2 bg-card rounded-full shadow-lg border"
+                  className={cn("absolute bottom-full mb-2 flex gap-1 p-2 bg-card rounded-full shadow-lg border", isRTL ? "right-0" : "left-0")}
                 >
                   {reactions.map((reaction) => (
                     <motion.button
