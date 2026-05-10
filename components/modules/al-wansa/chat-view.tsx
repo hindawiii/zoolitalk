@@ -296,7 +296,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
           className={cn("flex items-center gap-3 flex-1 min-w-0 hover:bg-secondary/50 rounded-lg p-1 -m-1 transition-colors", isRTL && "flex-row-reverse")}
           onClick={() => chat.type === 'private' && chat.participants?.[0] && onOpenProfile?.(chat.participants[0])}
         >
-          <div className="relative flex-shrink-0">
+          <div className="relative flex-shrink-0" dir={isRTL ? 'rtl' : 'ltr'}>
             <Avatar className="h-10 w-10">
               <AvatarImage src={chat.avatar} alt={chat.name} />
               <AvatarFallback>{(isRTL ? chat.nameAr : chat.name)[0]}</AvatarFallback>

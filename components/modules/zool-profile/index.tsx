@@ -342,11 +342,12 @@ export default function ZoolProfile() {
       <div 
         className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
         onClick={() => setSelectedImage(null)}
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 text-white hover:bg-white/20"
+          className="absolute top-4 end-4 text-white hover:bg-white/20"
           onClick={() => setSelectedImage(null)}
         >
           <MoreHorizontal className="h-6 w-6 rotate-90" />
@@ -443,7 +444,8 @@ export default function ZoolProfile() {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className={cn(
-                      'absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r',
+                      'absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r flex items-center justify-center',
+                      isRTL && 'flex-row-reverse',
                       rankInfo.gradient
                     )}
                   >
@@ -584,7 +586,7 @@ export default function ZoolProfile() {
             </div>
 
             {/* Stats Bar */}
-            <div className="grid grid-cols-4 gap-2 mt-4 p-3 rounded-xl bg-secondary/50">
+            <div className="grid grid-cols-4 gap-2 mt-4 p-3 rounded-xl bg-secondary/50" dir={isRTL ? 'rtl' : 'ltr'}>
               {stats.map((stat, idx) => (
                 <button
                   key={idx}
@@ -593,7 +595,7 @@ export default function ZoolProfile() {
                   <span className="text-lg font-bold text-[#2D5A27]">
                     {formatNumber(stat.value)}
                   </span>
-                  <span className={cn('text-[10px] text-muted-foreground', isRTL && 'font-arabic')}>
+                  <span className={cn('text-[10px] text-muted-foreground text-center', isRTL && 'font-arabic')}>
                     {stat.label}
                   </span>
                 </button>

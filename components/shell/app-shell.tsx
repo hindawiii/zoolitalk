@@ -70,16 +70,22 @@ function JabanaLoader() {
   )
 }
 
-// Page transition variants
-const pageVariants = {
-  initial: { opacity: 0, x: 20 },
-  enter: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -20 },
+// Page transition variants - direction-aware for RTL/LTR
+function usePageVariants(isRTL: boolean) {
+  return React.useMemo(
+    () => ({
+      initial: { opacity: 0, x: isRTL ? -20 : 20 },
+      enter: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: isRTL ? 20 : -20 },
+    }),
+    [isRTL]
+  )
 }
 
 export function AppShell() {
   const { activeTab, setSettingsOpen } = useAppStore()
   const { t, isRTL } = useLanguage()
+  const pageVariants = usePageVariants(isRTL)
   
   const ActiveModule = tabComponents[activeTab]
 

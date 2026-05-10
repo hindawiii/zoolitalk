@@ -178,7 +178,7 @@ export function PostCard({ post }: PostCardProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isRTL ? 'start' : 'end'} dir={isRTL ? 'rtl' : 'ltr'}>
             <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? 'حفظ' : 'Save'}</DropdownMenuItem>
-            <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? 'إبلاغ' : 'Report'}</DropdownMenuItem>
+            <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? '��بلاغ' : 'Report'}</DropdownMenuItem>
             <DropdownMenuItem className={cn(isRTL && 'flex-row-reverse')}>{isRTL ? 'إخفاء' : 'Hide'}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -203,7 +203,7 @@ export function PostCard({ post }: PostCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute bottom-4 right-4 bg-black/50 text-white hover:bg-black/70"
+                className="absolute bottom-4 end-4 bg-black/50 text-white hover:bg-black/70"
                 onClick={() => setIsMuted(!isMuted)}
               >
                 {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}

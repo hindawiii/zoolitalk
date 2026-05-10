@@ -81,14 +81,14 @@ export function ChatList({ onOpenSettings, showArchived = false }: ChatListProps
           </div>
         </div>
         
-        {/* Search */}
-        <div className="relative">
+        {/* Search - logical start-3 / ps-10 already direction-aware */}
+        <div className="relative" dir={isRTL ? 'rtl' : 'ltr'}>
           <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground start-3" />
           <Input
             placeholder={t('chat.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 rounded-full bg-secondary/50 ps-10 pe-4"
+            className={cn('h-10 rounded-full bg-secondary/50 ps-10 pe-4', isRTL && 'font-arabic text-right')}
           />
         </div>
       </div>
@@ -174,11 +174,8 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
       exit={{ opacity: 0, x: isRTL ? 100 : -100 }}
       className="relative mb-1"
     >
-      {/* Swipe Actions */}
-      <div className={cn(
-        'absolute inset-y-0 flex items-center gap-1 px-2',
-        isRTL ? 'start-0' : 'end-0'
-      )}>
+      {/* Swipe Actions - always at the trailing (end) edge; logical end-0 resolves correctly per dir */}
+      <div className="absolute inset-y-0 end-0 flex items-center gap-1 px-2">
         <Button
           size="icon"
           variant="ghost"
@@ -236,13 +233,13 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
                 )}
               </AvatarFallback>
             </Avatar>
-            {/* Online indicator */}
+            {/* Online indicator - logical end-0 follows direction */}
             {chat.isOnline && chat.type === 'private' && (
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+              <span className="absolute bottom-0 end-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
             )}
             {/* Group indicator */}
             {chat.type === 'group' && (
-              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-background">
+              <span className="absolute -bottom-1 -end-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-background">
                 {chat.participants?.length || 0}
               </span>
             )}
