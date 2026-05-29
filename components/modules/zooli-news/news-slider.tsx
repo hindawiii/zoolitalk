@@ -14,9 +14,12 @@ interface NewsArticle {
   titleAr: string
   summary: string
   summaryAr: string
+  content: string
+  contentAr: string
   image: string
   source: string
   sourceAr: string
+  url: string
   category: string
   publishedAt: Date
 }
