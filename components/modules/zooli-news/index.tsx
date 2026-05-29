@@ -360,7 +360,7 @@ export default function ZooliNews() {
   // Article Detail View
   if (selectedArticle) {
     return (
-      <div className="flex flex-col h-full bg-background">
+      <div className="flex flex-col h-full bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b">
           <Button variant="ghost" size="icon" onClick={() => setSelectedArticle(null)}>
@@ -400,7 +400,7 @@ export default function ZooliNews() {
 
             {/* Title */}
             <h1 className={cn(
-              'text-2xl font-bold leading-tight',
+              'text-xl sm:text-2xl font-bold leading-tight',
               isRTL && 'font-arabic'
             )}>
               {isRTL ? selectedArticle.titleAr : selectedArticle.title}
@@ -437,11 +437,11 @@ export default function ZooliNews() {
   }
 
   return (
-    <div className="flex flex-col min-h-full w-full max-w-full bg-background">
+    <div className="flex flex-col min-h-full w-full max-w-full bg-background overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="px-4 py-4 border-b space-y-4 w-full">
         <div className="flex items-center justify-between">
-          <h1 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>
+          <h1 className={cn('text-xl sm:text-2xl font-bold', isRTL && 'font-arabic')}>
             {isRTL ? 'أخبار راكوبتنا' : 'Rakobatna News'}
           </h1>
           <Button 
@@ -456,14 +456,14 @@ export default function ZooliNews() {
 
         {/* Category Tabs */}
         <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as NewsCategory | 'all')}>
-          <TabsList className="w-full justify-start overflow-x-auto scrollbar-hide">
-            <TabsTrigger value="all" className={cn(isRTL && 'font-arabic')}>
+          <TabsList className="w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap">
+            <TabsTrigger value="all" className={cn('shrink-0', isRTL && 'font-arabic')}>
               {isRTL ? 'الكل' : 'All'}
             </TabsTrigger>
             {(Object.keys(categoryConfig) as NewsCategory[]).map((cat) => {
               const config = categoryConfig[cat]
               return (
-                <TabsTrigger key={cat} value={cat} className={cn(isRTL && 'font-arabic')}>
+                <TabsTrigger key={cat} value={cat} className={cn('shrink-0', isRTL && 'font-arabic')}>
                   {isRTL ? config.labelAr : config.labelEn}
                 </TabsTrigger>
               )
@@ -479,9 +479,9 @@ export default function ZooliNews() {
           
           <div className="px-4 space-y-4">
           {/* Quick Currency Calculator */}
-          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-accent/5 w-full">
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-accent/5 w-full overflow-hidden">
             <CardHeader className="pb-3">
-              <CardTitle className={cn('text-base flex items-center gap-2', isRTL && 'font-arabic')}>
+              <CardTitle className={cn('text-sm sm:text-base flex items-center gap-2', isRTL && 'font-arabic')}>
                 <div className="p-1.5 rounded-lg bg-primary/10">
                   <Calculator className="h-4 w-4 text-primary" />
                 </div>
@@ -490,7 +490,7 @@ export default function ZooliNews() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Input Row */}
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
                 <div className="flex-1">
                   <Input
                     type="number"
@@ -501,7 +501,7 @@ export default function ZooliNews() {
                   />
                 </div>
                 <Select value={calcCurrency} onValueChange={setCalcCurrency}>
-                  <SelectTrigger className="w-[120px] h-12 bg-secondary/50 border-border/50">
+                  <SelectTrigger className="w-full sm:w-[120px] h-12 bg-secondary/50 border-border/50">
                     <SelectValue>
                       <span className="flex items-center gap-1.5">
                         <span>{selectedRate?.flag}</span>
@@ -530,13 +530,13 @@ export default function ZooliNews() {
               </div>
               
               {/* Results */}
-              <div className="grid grid-cols-2 gap-2 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                 {/* Bankak Rate */}
-                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 min-w-0">
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 min-w-0">
                   <p className={cn('text-xs text-muted-foreground mb-1', isRTL && 'font-arabic')}>
                     {isRTL ? 'سعر بنكك' : 'Bankak Rate'}
                   </p>
-                  <p className="text-lg font-bold text-primary truncate">
+                  <p className="text-xl sm:text-lg font-bold text-primary truncate">
                     {bankakResult.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </p>
                   <p className={cn('text-xs text-muted-foreground', isRTL && 'font-arabic')}>
@@ -545,11 +545,11 @@ export default function ZooliNews() {
                 </div>
                 
                 {/* Parallel Market Rate */}
-                <div className="p-2.5 rounded-xl bg-accent/10 border border-accent/20 min-w-0">
+                <div className="p-3 rounded-xl bg-accent/10 border border-accent/20 min-w-0">
                   <p className={cn('text-xs text-muted-foreground mb-1', isRTL && 'font-arabic')}>
                     {isRTL ? 'السوق الموازي' : 'Parallel Market'}
                   </p>
-                  <p className="text-lg font-bold text-accent truncate">
+                  <p className="text-xl sm:text-lg font-bold text-accent truncate">
                     {parallelResult.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </p>
                   <p className={cn('text-xs text-muted-foreground', isRTL && 'font-arabic')}>
@@ -569,9 +569,9 @@ export default function ZooliNews() {
           </Card>
 
           {/* Sudanese Currency Rates */}
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <CardTitle className={cn('text-sm flex items-center gap-2', isRTL && 'font-arabic')}>
                   <Banknote className="h-4 w-4 text-accent" />
                   {isRTL ? 'أسعار العملات مقابل الجنيه' : 'Currency Rates (SDG)'}
@@ -581,12 +581,12 @@ export default function ZooliNews() {
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-4">
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
+            <CardContent className="pb-4 overflow-hidden">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {mockCurrencyRates.map((currency) => (
                   <div 
                     key={currency.code}
-                    className="flex-shrink-0 p-2.5 rounded-lg bg-secondary/50 min-w-[115px]"
+                    className="flex-shrink-0 p-2.5 rounded-lg bg-secondary/50 min-w-[100px] sm:min-w-[115px]"
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="flex items-center gap-1">

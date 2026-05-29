@@ -65,7 +65,7 @@ export function OpportunitiesSlider({ onOpportunityClick }: OpportunitiesSliderP
   if (featuredOpportunities.length === 0) return null
   
   return (
-    <div className="relative">
+    <div className="relative w-full overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className={cn(
         'flex items-center justify-between px-4 mb-3',
@@ -114,8 +114,7 @@ export function OpportunitiesSlider({ onOpportunityClick }: OpportunitiesSliderP
       {/* Slider */}
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-2"
-        dir={isRTL ? 'rtl' : 'ltr'}
+        className="flex gap-3 overflow-x-auto scrollbar-hide ps-4 pe-4 pb-2"
       >
         {featuredOpportunities.map((opp, index) => (
           <OpportunityCard
@@ -147,7 +146,7 @@ function OpportunityCard({ opportunity, index, onClick }: OpportunityCardProps) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       className={cn(
-        'relative flex-shrink-0 w-64 rounded-2xl overflow-hidden text-start',
+        'relative flex-shrink-0 w-[240px] sm:w-64 rounded-2xl overflow-hidden text-start',
         'bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500',
         'shadow-lg hover:shadow-xl transition-shadow'
       )}

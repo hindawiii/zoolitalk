@@ -76,6 +76,7 @@ export function OpportunityDetailSheet({
       <SheetContent
         side="bottom"
         className="h-[90vh] rounded-t-3xl flex flex-col p-0"
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Cover image / header */}
         <div className="relative h-40 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500 flex-shrink-0">
@@ -172,7 +173,7 @@ export function OpportunityDetailSheet({
             </div>
             
             {/* Info grid - 3 columns */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <InfoCard
                 icon={<MapPin className="w-5 h-5" />}
                 label={isRTL ? 'الموقع' : 'Location'}
