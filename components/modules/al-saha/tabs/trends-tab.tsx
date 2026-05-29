@@ -91,15 +91,15 @@ export function TrendsTab() {
               transition={{ delay: index * 0.05 }}
               className="bg-white dark:bg-card rounded-xl p-3 border border-[#2D5A27]/10 hover:border-[#2D5A27]/30 transition-colors cursor-pointer"
             >
-              <div className="flex flex-row-reverse items-start gap-3">
-                {/* Rank - Now on the right side for RTL */}
+              <div className="flex items-start gap-3">
+                {/* Rank - On the right side due to dir="rtl" */}
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#2D5A27]/10 flex items-center justify-center">
                   <span className="text-xs font-bold text-[#2D5A27]">{index + 1}</span>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0 text-right">
-                  <div className="flex flex-row-reverse items-center gap-2 flex-wrap justify-end">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-bold font-arabic text-foreground truncate">
                       #{trend.tagAr}
                     </h3>
@@ -107,7 +107,7 @@ export function TrendsTab() {
                       <motion.div
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ repeat: Infinity, duration: 1.5 }}
-                        className="flex flex-row-reverse items-center gap-0.5 px-1.5 py-0.5 bg-red-500/10 rounded-full"
+                        className="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-500/10 rounded-full"
                       >
                         <Flame className="h-2.5 w-2.5 text-red-500" />
                         <span className="text-[9px] font-bold text-red-500 font-arabic">ساخن</span>
@@ -115,15 +115,15 @@ export function TrendsTab() {
                     )}
                   </div>
                   
-                  <div className="flex flex-row-reverse items-center gap-2 mt-1 flex-wrap justify-end">
-                    <div className="flex flex-row-reverse items-center gap-1 text-muted-foreground">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <div className="flex items-center gap-1 text-muted-foreground">
                       <Users className="h-3 w-3" />
                       <span className="text-[10px] font-arabic">
                         {formatCount(trend.zoolsCount)} زول
                       </span>
                     </div>
                     {trend.city && (
-                      <div className="flex flex-row-reverse items-center gap-1 text-muted-foreground">
+                      <div className="flex items-center gap-1 text-muted-foreground">
                         <MapPin className="h-3 w-3" />
                         <span className="text-[10px] font-arabic">{trend.city}</span>
                       </div>
@@ -131,7 +131,7 @@ export function TrendsTab() {
                   </div>
                 </div>
 
-                {/* Hot Indicator - Now on the left side for RTL */}
+                {/* Hot Indicator - On the left side due to dir="rtl" */}
                 {trend.isHot && (
                   <div className="flex-shrink-0">
                     <motion.div
