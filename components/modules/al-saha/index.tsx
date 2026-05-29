@@ -37,7 +37,7 @@ export default function AlSaha() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
+    <div dir="rtl" className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
       {/* Sticky Header with Segmented Control */}
       <div className="flex-shrink-0 bg-[#1a3a18] dark:bg-[#0f1f0e] shadow-md">
         {/* Title Bar */}
