@@ -41,11 +41,11 @@ export function TrendsTab() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
+    <div dir="rtl" className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
       {/* City Filter Header */}
       <div className="flex-shrink-0 px-3 py-3 bg-white dark:bg-card border-b border-[#2D5A27]/10">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-row items-center justify-between gap-2">
+          <div className="flex flex-row items-center gap-2 flex-shrink-0">
             <TrendingUp className="h-5 w-5 text-[#2D5A27]" />
             <h2 className="text-base font-bold font-arabic text-[#2D5A27]">الترندات</h2>
           </div>
@@ -91,7 +91,7 @@ export function TrendsTab() {
               transition={{ delay: index * 0.05 }}
               className="bg-white dark:bg-card rounded-xl p-3 border border-[#2D5A27]/10 hover:border-[#2D5A27]/30 transition-colors cursor-pointer"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex flex-row items-start gap-3">
                 {/* Rank */}
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#2D5A27]/10 flex items-center justify-center">
                   <span className="text-xs font-bold text-[#2D5A27]">{index + 1}</span>
@@ -99,7 +99,7 @@ export function TrendsTab() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-row items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-bold font-arabic text-foreground truncate">
                       #{trend.tagAr}
                     </h3>
@@ -107,7 +107,7 @@ export function TrendsTab() {
                       <motion.div
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ repeat: Infinity, duration: 1.5 }}
-                        className="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-500/10 rounded-full"
+                        className="flex flex-row items-center gap-0.5 px-1.5 py-0.5 bg-red-500/10 rounded-full"
                       >
                         <Flame className="h-2.5 w-2.5 text-red-500" />
                         <span className="text-[9px] font-bold text-red-500 font-arabic">ساخن</span>
@@ -115,15 +115,15 @@ export function TrendsTab() {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                  <div className="flex flex-row items-center gap-2 mt-1 flex-wrap">
+                    <div className="flex flex-row items-center gap-1 text-muted-foreground">
                       <Users className="h-3 w-3" />
                       <span className="text-[10px] font-arabic">
                         {formatCount(trend.zoolsCount)} زول
                       </span>
                     </div>
                     {trend.city && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
+                      <div className="flex flex-row items-center gap-1 text-muted-foreground">
                         <MapPin className="h-3 w-3" />
                         <span className="text-[10px] font-arabic">{trend.city}</span>
                       </div>

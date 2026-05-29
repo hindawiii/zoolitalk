@@ -144,13 +144,13 @@ export function PostCard({ post }: PostCardProps) {
   const currentReaction = reactions.find((r) => r.type === post.userReaction)
 
   return (
-    <article className="py-3 relative w-full max-w-full overflow-hidden box-border">
+    <article dir="rtl" className="py-3 relative w-full max-w-full overflow-hidden box-border">
       {/* Countdown Badge for Timed Posts */}
       {countdown && post.expiry !== 'permanent' && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 bg-orange-500/90 text-white rounded-full text-xs font-arabic"
+          className="absolute top-2 start-2 z-10 flex flex-row items-center gap-1 px-2 py-1 bg-orange-500/90 text-white rounded-full text-xs font-arabic"
         >
           <Clock className="h-3 w-3" />
           <span>{countdown}</span>
@@ -158,24 +158,24 @@ export function PostCard({ post }: PostCardProps) {
       )}
       
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 mb-2">
-        <Avatar className="h-9 w-9 flex-shrink-0">
+      <div className="flex flex-row items-center gap-2 px-3 mb-2 w-full">
+        <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarImage src={post.authorAvatar} alt={post.authorName} />
-          <AvatarFallback className="bg-primary/10 text-primary text-sm">
+          <AvatarFallback className="bg-primary/10 text-primary text-xs">
             {(isRTL ? post.authorNameAr : post.authorName)[0]}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <p className={cn('font-semibold text-sm truncate', isRTL && 'font-arabic')}>
             {isRTL ? post.authorNameAr : post.authorName}
           </p>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground flex-wrap">
-            <span className="truncate max-w-[80px]">{formatTime(post.timestamp)}</span>
+          <div className="flex flex-row items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="truncate">{formatTime(post.timestamp)}</span>
             {post.location && (
               <>
-                <span>•</span>
+                <span className="flex-shrink-0">•</span>
                 <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                <span className="truncate max-w-[60px]">{post.location}</span>
+                <span className="truncate">{post.location}</span>
               </>
             )}
           </div>
@@ -195,8 +195,8 @@ export function PostCard({ post }: PostCardProps) {
       </div>
 
       {/* Content */}
-      <div className="px-3 mb-2 w-full" style={{ maxWidth: 'calc(100vw - 24px)' }}>
-        <p className={cn('text-sm leading-relaxed', isRTL && 'font-arabic')} style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>
+      <div className="px-3 mb-2 w-full overflow-hidden">
+        <p className={cn('text-sm leading-relaxed break-words', isRTL && 'font-arabic')}>
           {isRTL ? post.contentAr : post.content}
         </p>
       </div>
@@ -264,7 +264,7 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Reaction Stats */}
       {totalReactions > 0 && (
-        <div className="px-3 mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="px-3 mb-1.5 flex flex-row items-center gap-2 text-xs text-muted-foreground">
           <div className="flex -space-x-1">
             {reactions
               .filter((r) => post.reactions[r.type] > 0)
@@ -278,8 +278,8 @@ export function PostCard({ post }: PostCardProps) {
       )}
 
       {/* Actions */}
-      <div className="px-3 flex items-center justify-between">
-        <div className="flex items-center gap-0.5">
+      <div className="px-3 flex flex-row items-center justify-between">
+        <div className="flex flex-row items-center gap-0.5">
           {/* Like button with reactions */}
           <div className="relative">
             <Button

@@ -111,7 +111,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl">
         <SheetHeader className="flex flex-row items-center justify-between border-b pb-4">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
@@ -134,7 +134,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
 
         <div className="py-4 space-y-4">
           {/* Author info */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-row items-center gap-3">
             <Avatar className="h-12 w-12">
               <AvatarImage src={currentUser?.avatar} />
               <AvatarFallback className="bg-primary/10 text-primary">
@@ -145,7 +145,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
               <p className={cn('font-semibold', isRTL && 'font-arabic')}>
                 {isRTL ? currentUser?.nameAr : currentUser?.name}
               </p>
-              <button className="text-xs text-muted-foreground flex items-center gap-1">
+              <button className="text-xs text-muted-foreground flex flex-row items-center gap-1">
                 <MapPin className="h-3 w-3" />
                 {isRTL ? 'إضافة موقع' : 'Add location'}
               </button>
@@ -183,8 +183,8 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
           )}
 
           {/* Post Expiry Selector */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex flex-row items-center justify-between pt-4 border-t">
+            <div className="flex flex-row items-center gap-2 text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span className="text-sm font-arabic">مدة المنشور:</span>
             </div>
@@ -210,7 +210,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
           </div>
 
           {/* Media buttons */}
-          <div className="flex items-center gap-2 pt-4 border-t">
+          <div className="flex flex-row items-center gap-2 pt-4 border-t">
             <Button
               variant="outline"
               className="flex-1 gap-2"
