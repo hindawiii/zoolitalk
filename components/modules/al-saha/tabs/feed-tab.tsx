@@ -65,8 +65,8 @@ export function FeedTab() {
         <div className="w-full">
           {/* Firebase Connection Status - Dev indicator */}
           {process.env.NODE_ENV === 'development' && (
-            <div className={cn(
-              'flex items-center justify-center gap-2 py-1.5 text-xs font-medium w-full',
+            <div dir="rtl" className={cn(
+              'flex flex-row items-center justify-center gap-2 py-1.5 text-xs font-medium w-full',
               statusConfig.color
             )}>
               <StatusIcon className="h-3.5 w-3.5 flex-shrink-0" />
@@ -89,7 +89,7 @@ export function FeedTab() {
           
           {/* Demo Mode Notice */}
           {firebaseStatus === 'unconfigured' && (
-            <div className="mx-3 mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <div dir="rtl" className="mx-3 mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
               <p className={cn('text-xs text-blue-700 dark:text-blue-300 text-center', isRTL && 'font-arabic')}>
                 {isRTL 
                   ? 'Firebase تعمل في وضع تجريبي - قم بتكوين'
@@ -99,10 +99,10 @@ export function FeedTab() {
           )}
           
           {/* Create Post Prompt */}
-          <div className="p-3 border-b border-[#2D5A27]/10 bg-white dark:bg-card">
+          <div dir="rtl" className="p-3 border-b border-[#2D5A27]/10 bg-white dark:bg-card">
             <button
               onClick={() => setShowCreatePost(true)}
-              className="w-full flex items-center gap-2 p-2.5 rounded-xl bg-[#F5F5DC] dark:bg-secondary/50 hover:bg-[#eaeacc] dark:hover:bg-secondary transition-colors"
+              className="w-full flex flex-row items-center gap-2 p-2.5 rounded-xl bg-[#F5F5DC] dark:bg-secondary/50 hover:bg-[#eaeacc] dark:hover:bg-secondary transition-colors"
             >
               <Avatar className="h-9 w-9 flex-shrink-0">
                 <AvatarImage src={currentUser?.avatar} alt={currentUser?.name} />
@@ -120,8 +120,8 @@ export function FeedTab() {
           </div>
 
           {/* Stories Row - Dark Olive Theme with Gold Accents */}
-          <div className="py-3 border-b border-[#2D5A27]/20 bg-[#1a3a18] dark:bg-[#0f1f0e] overflow-hidden">
-            <div className="flex gap-3 px-3 overflow-x-auto scrollbar-hide">
+          <div dir="rtl" className="py-3 border-b border-[#2D5A27]/20 bg-[#1a3a18] dark:bg-[#0f1f0e] overflow-hidden">
+            <div className="flex flex-row gap-3 px-3 overflow-x-auto scrollbar-hide">
               {/* Add Story */}
               <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                 <div className="relative p-0.5 rounded-full border-2 border-dashed border-[#C9A227]/60 hover:border-[#C9A227] transition-colors">

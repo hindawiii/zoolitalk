@@ -83,7 +83,7 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
     >
       {/* Header */}
       <div className="p-2.5 border-b border-[#2D5A27]/10">
-        <div className="flex items-start gap-2">
+        <div className="flex flex-row items-start gap-2">
           <div className={cn(
             'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
             getCategoryColor(service.category)
@@ -92,7 +92,7 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-bold font-arabic text-xs truncate">{service.nameAr}</h3>
-            <div className="flex items-center gap-1 mt-0.5">
+            <div className="flex flex-row items-center gap-1 mt-0.5">
               <MapPin className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
               <span className="text-[10px] text-muted-foreground font-arabic truncate">
                 {service.addressAr}
@@ -102,7 +102,7 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
         </div>
 
         {/* Status badge */}
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-row items-center justify-between mt-2">
           <Badge 
             variant="outline" 
             className={cn(
@@ -113,9 +113,9 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
             )}
           >
             {service.isOpen ? (
-              <span className="flex items-center gap-0.5"><CheckCircle2 className="h-2.5 w-2.5" /> مفتوح</span>
+              <span className="flex flex-row items-center gap-0.5"><CheckCircle2 className="h-2.5 w-2.5" /> مفتوح</span>
             ) : (
-              <span className="flex items-center gap-0.5"><XCircle className="h-2.5 w-2.5" /> مغلق</span>
+              <span className="flex flex-row items-center gap-0.5"><XCircle className="h-2.5 w-2.5" /> مغلق</span>
             )}
           </Badge>
           {service.distance && (
@@ -129,7 +129,7 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
       {/* Latest status */}
       {latestStatus && (
         <div className="p-2 bg-[#F5F5DC]/50 dark:bg-secondary/30">
-          <div className="flex items-start gap-1.5">
+          <div className="flex flex-row items-start gap-1.5">
             <MessageSquare className="h-3 w-3 text-[#2D5A27] mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-arabic leading-relaxed text-foreground line-clamp-2">
@@ -185,9 +185,9 @@ function ServiceDetailSheet({ service, open, onOpenChange }: ServiceDetailSheetP
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl">
+      <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl" dir="rtl">
         <SheetHeader className="border-b pb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-row items-center gap-3">
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center',
               getCategoryColor(service.category)
@@ -195,8 +195,8 @@ function ServiceDetailSheet({ service, open, onOpenChange }: ServiceDetailSheetP
               <Icon className="h-6 w-6" />
             </div>
             <div className="flex-1">
-              <SheetTitle className="font-arabic text-right">{service.nameAr}</SheetTitle>
-              <div className="flex items-center gap-1 mt-1">
+              <SheetTitle className="font-arabic text-start">{service.nameAr}</SheetTitle>
+              <div className="flex flex-row items-center gap-1 mt-1">
                 <MapPin className="h-3 w-3 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-arabic">
                   {service.addressAr}
@@ -208,12 +208,12 @@ function ServiceDetailSheet({ service, open, onOpenChange }: ServiceDetailSheetP
 
         <div className="py-4 flex flex-col h-full">
           {/* Add status input */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-row gap-2 mb-4">
             <Input
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
               placeholder="شارك تحديث... (مثال: خبز متوفر)"
-              className="flex-1 font-arabic text-right"
+              className="flex-1 font-arabic text-start"
               onKeyDown={(e) => e.key === 'Enter' && handleSubmitStatus()}
             />
             <Button 
@@ -242,7 +242,7 @@ function ServiceDetailSheet({ service, open, onOpenChange }: ServiceDetailSheetP
                     className="bg-[#F5F5DC] dark:bg-secondary/50 rounded-lg p-3"
                   >
                     <p className="text-sm font-arabic">{status.messageAr}</p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-row items-center gap-2 mt-2">
                       <span className="text-xs font-bold text-[#2D5A27] font-arabic">
                         {status.authorName}
                       </span>
@@ -286,10 +286,10 @@ export function RadarTab() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
+    <div dir="rtl" className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
       {/* Category Filter */}
       <div className="flex-shrink-0 px-3 py-2.5 bg-white dark:bg-card border-b border-[#2D5A27]/10">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+        <div className="flex flex-row gap-1.5 overflow-x-auto scrollbar-hide">
           {categories.map((category) => {
             const Icon = category.icon
             return (
