@@ -82,19 +82,19 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
       onClick={() => onOpenDetail(service)}
     >
       {/* Header */}
-      <div className="p-2.5 border-b border-[#2D5A27]/10">
-        <div className="flex flex-row items-start gap-2">
+      <div className="p-2 border-b border-[#2D5A27]/10">
+        <div className="flex flex-row items-start gap-2 w-full">
           <div className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+            'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
             getCategoryColor(service.category)
           )}>
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold font-arabic text-xs truncate">{service.nameAr}</h3>
+            <h3 className="font-bold font-arabic text-[11px] text-start leading-tight break-words">{service.nameAr}</h3>
             <div className="flex flex-row items-center gap-1 mt-0.5">
-              <MapPin className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
-              <span className="text-[10px] text-muted-foreground font-arabic truncate">
+              <MapPin className="h-2 w-2 text-muted-foreground flex-shrink-0" />
+              <span className="text-[9px] text-muted-foreground font-arabic text-start truncate">
                 {service.addressAr}
               </span>
             </div>
@@ -102,7 +102,7 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
         </div>
 
         {/* Status badge */}
-        <div className="flex flex-row items-center justify-between mt-2">
+        <div className="flex flex-row items-center justify-between mt-1.5">
           <Badge 
             variant="outline" 
             className={cn(
@@ -129,13 +129,13 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
       {/* Latest status */}
       {latestStatus && (
         <div className="p-2 bg-[#F5F5DC]/50 dark:bg-secondary/30">
-          <div className="flex flex-row items-start gap-1.5">
+          <div className="flex flex-row items-start gap-1.5 w-full">
             <MessageSquare className="h-3 w-3 text-[#2D5A27] mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-arabic leading-relaxed text-foreground line-clamp-2">
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <p className="text-[10px] font-arabic leading-relaxed text-foreground line-clamp-2 text-start">
                 {latestStatus.messageAr}
               </p>
-              <span className="text-[9px] text-muted-foreground font-arabic">
+              <span className="text-[9px] text-muted-foreground font-arabic text-start">
                 {latestStatus.authorName}
               </span>
             </div>

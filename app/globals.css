@@ -327,6 +327,26 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Stories scrollbar - visible thin scrollbar */
+  .stories-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201, 162, 39, 0.5) transparent;
+  }
+  .stories-scrollbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  .stories-scrollbar::-webkit-scrollbar-track {
+    background: rgba(45, 90, 39, 0.2);
+    border-radius: 2px;
+  }
+  .stories-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(201, 162, 39, 0.6);
+    border-radius: 2px;
+  }
+  .stories-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(201, 162, 39, 0.8);
+  }
 }
 
 /* Gift Animation Effects */

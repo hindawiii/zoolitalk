@@ -121,7 +121,7 @@ export function FeedTab() {
 
           {/* Stories Row - Dark Olive Theme with Gold Accents */}
           <div dir="rtl" className="py-3 border-b border-[#2D5A27]/20 bg-[#1a3a18] dark:bg-[#0f1f0e] w-full">
-            <div className="flex flex-row-reverse gap-3 px-3 overflow-x-auto scrollbar-hide w-full" style={{ direction: 'ltr' }}>
+            <div className="flex flex-row-reverse gap-3 px-3 pb-2 overflow-x-auto w-full stories-scrollbar" style={{ direction: 'ltr' }}>
               {/* Add Story */}
               <div className="flex flex-col items-center gap-1.5 flex-shrink-0" style={{ direction: 'rtl' }}>
                 <div className="relative p-0.5 rounded-full border-2 border-dashed border-[#C9A227]/60 hover:border-[#C9A227] transition-colors">
@@ -141,6 +141,10 @@ export function FeedTab() {
                 { name: 'أميرة', hasNew: false },
                 { name: 'خالد', hasNew: true },
                 { name: 'سارة', hasNew: false },
+                { name: 'فاطمة', hasNew: true },
+                { name: 'أحمد', hasNew: false },
+                { name: 'محمد', hasNew: true },
+                { name: 'ليلى', hasNew: false },
               ].map((story, i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group" style={{ direction: 'rtl' }}>
                   {/* Story ring - Gold for new, muted for viewed */}

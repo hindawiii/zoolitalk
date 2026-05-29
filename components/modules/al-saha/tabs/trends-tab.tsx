@@ -91,16 +91,16 @@ export function TrendsTab() {
               transition={{ delay: index * 0.05 }}
               className="bg-white dark:bg-card rounded-xl p-3 border border-[#2D5A27]/10 hover:border-[#2D5A27]/30 transition-colors cursor-pointer"
             >
-              <div className="flex flex-row items-start gap-3">
+              <div className="flex flex-row items-start gap-3 w-full">
                 {/* Rank */}
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#2D5A27]/10 flex items-center justify-center">
                   <span className="text-xs font-bold text-[#2D5A27]">{index + 1}</span>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex flex-row items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-bold font-arabic text-foreground truncate">
+                    <h3 className="text-sm font-bold font-arabic text-foreground text-start">
                       #{trend.tagAr}
                     </h3>
                     {trend.isHot && (
