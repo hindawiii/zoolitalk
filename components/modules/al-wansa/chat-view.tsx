@@ -278,14 +278,14 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     <div className="flex flex-col h-full bg-background w-full max-w-full overflow-hidden relative">
       {/* Background Pattern - Click to change wallpaper */}
       <div 
-        className="absolute inset-0 cursor-pointer" 
+        className="absolute inset-0 cursor-pointer pointer-events-none" 
         onClick={() => setShowWallpaperPicker(true)}
         aria-label={isRTL ? 'تغيير الخلفية' : 'Change wallpaper'}
       >
         <ChatBackgroundPattern />
       </div>
       
-      {/* Header */}
+      {/* Header - Fixed at top */}
       <header className="flex items-center gap-3 px-2 py-2 bg-card/95 backdrop-blur-sm border-b relative z-10 flex-shrink-0">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackIcon className="h-5 w-5" />
@@ -389,9 +389,10 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         </div>
       </header>
 
-      {/* Messages */}
-      <ScrollArea ref={scrollRef} className="flex-1 p-4 relative z-0 overflow-y-auto">
-        <div className="space-y-4 pb-4">
+      {/* Messages - Scrollable area that takes remaining space */}
+      <div className="flex-1 overflow-hidden relative z-0">
+        <ScrollArea ref={scrollRef} className="h-full p-4">
+          <div className="space-y-4 pb-4">
           {chatMessages.map((message, index) => {
             const isSent = message.senderId === currentUser?.id
             const showAvatar = !isSent && (
@@ -427,8 +428,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               />
             )
           })}
-        </div>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      </div>
 
       {/* Reply preview */}
       <AnimatePresence>
