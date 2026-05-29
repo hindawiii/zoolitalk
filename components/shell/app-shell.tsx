@@ -107,7 +107,7 @@ export function AppShell() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden content-area w-full max-w-full box-border">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden content-area w-full max-w-[100vw] box-border">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
