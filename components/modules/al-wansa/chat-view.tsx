@@ -286,7 +286,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
       </div>
       
       {/* Header */}
-      <header className="flex items-center gap-3 px-2 py-2 bg-card/95 backdrop-blur-sm border-b relative z-10">
+      <header className="flex items-center gap-3 px-2 py-2 bg-card/95 backdrop-blur-sm border-b relative z-10 flex-shrink-0">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackIcon className="h-5 w-5" />
         </Button>
@@ -390,8 +390,8 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
       </header>
 
       {/* Messages */}
-      <ScrollArea ref={scrollRef} className="flex-1 p-4 pb-24 relative z-0">
-        <div className="space-y-4">
+      <ScrollArea ref={scrollRef} className="flex-1 p-4 relative z-0 overflow-y-auto">
+        <div className="space-y-4 pb-4">
           {chatMessages.map((message, index) => {
             const isSent = message.senderId === currentUser?.id
             const showAvatar = !isSent && (
@@ -453,9 +453,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         )}
       </AnimatePresence>
 
-      {/* Sticky Input Area */}
+      {/* Fixed Input Area at bottom */}
       <div 
-        className="sticky bottom-0 left-0 right-0 p-3 border-t bg-card/95 backdrop-blur-sm z-20"
+        className="p-3 border-t bg-card/95 backdrop-blur-sm z-20 flex-shrink-0"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {isRecording ? (

@@ -64,59 +64,61 @@ export default function AlWansa() {
   return (
     <ChatThemeProvider>
       <div className="h-full flex flex-col w-full max-w-full overflow-x-hidden">
-        {/* Sticky Tab Navigation Header */}
-        <div className="sticky top-0 z-40 bg-white/80 dark:bg-background/80 backdrop-blur-xl border-b">
-          <div className="relative flex items-center">
-            {/* Tabs - reversed for RTL */}
-            <div className={cn(
-              'flex w-full',
-              isRTL && 'flex-row-reverse'
-            )}>
-              {tabs.map((tab, index) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
-                
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                      'flex-1 flex flex-col items-center gap-1 py-3 px-2 transition-colors relative',
-                      isActive 
-                        ? 'text-[#2D5A27]' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    <Icon className={cn(
-                      'h-5 w-5 transition-transform',
-                      isActive && 'scale-110'
-                    )} />
-                    <span className={cn(
-                      'text-xs font-medium',
-                      isRTL && 'font-arabic'
-                    )}>
-                      {isRTL ? tab.labelAr : tab.labelEn}
-                    </span>
-                  </button>
-                )
-              })}
+        {/* Sticky Tab Navigation Header - Hidden when chat is open */}
+        {!activeChatId && (
+          <div className="sticky top-0 z-40 bg-white/80 dark:bg-background/80 backdrop-blur-xl border-b">
+            <div className="relative flex items-center">
+              {/* Tabs - reversed for RTL */}
+              <div className={cn(
+                'flex w-full',
+                isRTL && 'flex-row-reverse'
+              )}>
+                {tabs.map((tab, index) => {
+                  const Icon = tab.icon
+                  const isActive = activeTab === tab.id
+                  
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        'flex-1 flex flex-col items-center gap-1 py-3 px-2 transition-colors relative',
+                        isActive 
+                          ? 'text-[#2D5A27]' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <Icon className={cn(
+                        'h-5 w-5 transition-transform',
+                        isActive && 'scale-110'
+                      )} />
+                      <span className={cn(
+                        'text-xs font-medium',
+                        isRTL && 'font-arabic'
+                      )}>
+                        {isRTL ? tab.labelAr : tab.labelEn}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              
+              {/* Sliding Indicator */}
+              <motion.div
+                className="absolute bottom-0 h-0.5 bg-[#2D5A27] rounded-full"
+                initial={false}
+                animate={{
+                  width: `${100 / tabs.length}%`,
+                  x: isRTL 
+                    ? `${(tabs.length - 1 - activeTabIndex) * 100}%`
+                    : `${activeTabIndex * 100}%`,
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                style={{ width: `${100 / tabs.length}%` }}
+              />
             </div>
-            
-            {/* Sliding Indicator */}
-            <motion.div
-              className="absolute bottom-0 h-0.5 bg-[#2D5A27] rounded-full"
-              initial={false}
-              animate={{
-                width: `${100 / tabs.length}%`,
-                x: isRTL 
-                  ? `${(tabs.length - 1 - activeTabIndex) * 100}%`
-                  : `${activeTabIndex * 100}%`,
-              }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              style={{ width: `${100 / tabs.length}%` }}
-            />
           </div>
-        </div>
+        )}
 
         {/* Tab Content */}
         <div className="flex-1 overflow-hidden">
