@@ -158,24 +158,24 @@ export function PostCard({ post }: PostCardProps) {
       )}
       
       {/* Header */}
-      <div className="flex flex-row items-center gap-2 px-3 mb-2">
-        <Avatar className="h-9 w-9 flex-shrink-0">
+      <div className="flex flex-row items-center gap-2 px-3 mb-2 w-full">
+        <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarImage src={post.authorAvatar} alt={post.authorName} />
-          <AvatarFallback className="bg-primary/10 text-primary text-sm">
+          <AvatarFallback className="bg-primary/10 text-primary text-xs">
             {(isRTL ? post.authorNameAr : post.authorName)[0]}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <p className={cn('font-semibold text-sm truncate', isRTL && 'font-arabic')}>
             {isRTL ? post.authorNameAr : post.authorName}
           </p>
-          <div className="flex flex-row items-center gap-1 text-[10px] text-muted-foreground flex-wrap">
-            <span className="truncate max-w-[80px]">{formatTime(post.timestamp)}</span>
+          <div className="flex flex-row items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="truncate">{formatTime(post.timestamp)}</span>
             {post.location && (
               <>
-                <span>•</span>
+                <span className="flex-shrink-0">•</span>
                 <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                <span className="truncate max-w-[60px]">{post.location}</span>
+                <span className="truncate">{post.location}</span>
               </>
             )}
           </div>
@@ -195,8 +195,8 @@ export function PostCard({ post }: PostCardProps) {
       </div>
 
       {/* Content */}
-      <div className="px-3 mb-2 w-full" style={{ maxWidth: 'calc(100vw - 24px)' }}>
-        <p className={cn('text-sm leading-relaxed', isRTL && 'font-arabic')} style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>
+      <div className="px-3 mb-2 w-full overflow-hidden">
+        <p className={cn('text-sm leading-relaxed break-words', isRTL && 'font-arabic')}>
           {isRTL ? post.contentAr : post.content}
         </p>
       </div>
