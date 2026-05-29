@@ -168,7 +168,7 @@ function NewsCard({ article, index, isRTL, categoryConfig, formatTimeAgo, onClic
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        'relative flex-shrink-0 w-[140px] sm:w-[180px] rounded-xl overflow-hidden text-start',
+        'relative flex-shrink-0 w-[180px] sm:w-[200px] rounded-xl overflow-hidden text-start',
         'bg-card border border-border/50',
         'shadow-sm hover:shadow-md transition-all'
       )}
@@ -184,27 +184,27 @@ function NewsCard({ article, index, isRTL, categoryConfig, formatTimeAgo, onClic
           className="object-cover"
         />
         <Badge 
-          className="absolute top-1.5 start-1.5 sm:top-2 sm:start-2 text-[9px] sm:text-[10px] px-1.5 py-0.5 bg-primary/90"
+          className="absolute top-2 start-2 sm:top-2 sm:start-2 text-[10px] sm:text-[11px] px-2 py-0.5 bg-primary/90"
         >
           {isRTL ? categoryConfig[article.category]?.labelAr : categoryConfig[article.category]?.labelEn}
         </Badge>
       </div>
       
       {/* Content */}
-      <div className="p-2 sm:p-2.5 space-y-1 sm:space-y-1.5">
+      <div className="p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
         <h3 className={cn(
-          'font-semibold text-[11px] sm:text-xs line-clamp-2 leading-tight',
+          'font-semibold text-[12px] sm:text-sm leading-snug line-clamp-2',
           isRTL && 'font-arabic'
         )}>
           {isRTL ? article.titleAr : article.title}
         </h3>
         
-        <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground">
-          <span className={cn('truncate max-w-[60%]', isRTL && 'font-arabic')}>
+        <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-muted-foreground">
+          <span className={cn('truncate max-w-[55%]', isRTL && 'font-arabic')}>
             {isRTL ? article.sourceAr : article.source}
           </span>
-          <span className="flex items-center gap-0.5 flex-shrink-0">
-            <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+          <span className="flex items-center gap-1 flex-shrink-0">
+            <Clock className="w-3 h-3 sm:w-3 sm:h-3" />
             {formatTimeAgo(article.publishedAt)}
           </span>
         </div>

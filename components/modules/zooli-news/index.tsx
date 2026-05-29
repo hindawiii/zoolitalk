@@ -632,13 +632,13 @@ export default function ZooliNews() {
 
           {/* Main Content Tabs */}
           <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'news' | 'opportunities')} className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-4">
-              <TabsTrigger value="news" className={cn('gap-2', isRTL && 'font-arabic')}>
-                <Globe className="h-4 w-4" />
+            <TabsList className="w-full grid grid-cols-2 mb-3 sm:mb-4 h-10 sm:h-11">
+              <TabsTrigger value="news" className={cn('gap-1.5 sm:gap-2 text-xs sm:text-sm', isRTL && 'font-arabic')}>
+                <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {isRTL ? 'آخر الأخبار' : 'Latest News'}
               </TabsTrigger>
-              <TabsTrigger value="opportunities" className={cn('gap-2', isRTL && 'font-arabic')}>
-                <Briefcase className="h-4 w-4" />
+              <TabsTrigger value="opportunities" className={cn('gap-1.5 sm:gap-2 text-xs sm:text-sm', isRTL && 'font-arabic')}>
+                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {isRTL ? 'الفرص' : 'Opportunities'}
               </TabsTrigger>
             </TabsList>
@@ -730,35 +730,35 @@ export default function ZooliNews() {
             </TabsContent>
 
             {/* Opportunities Tab */}
-            <TabsContent value="opportunities" className="mt-0 space-y-6">
+            <TabsContent value="opportunities" className="mt-0 space-y-5">
               {/* Scholarships Section */}
               <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
+                  <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  <h3 className={cn('font-semibold text-base sm:text-lg', isRTL && 'font-arabic')}>
                     {isRTL ? 'المنح الدراسية' : 'Scholarships'}
                   </h3>
                 </div>
                 
                 {mockScholarships.map((scholarship) => (
                   <Card key={scholarship.id} className="border-primary/20 hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className={cn('font-semibold line-clamp-2', isRTL && 'font-arabic')}>
+                    <CardContent className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <h4 className={cn('font-semibold text-sm sm:text-base leading-snug line-clamp-2', isRTL && 'font-arabic')}>
                           {isRTL ? scholarship.titleAr : scholarship.title}
                         </h4>
                         {scholarship.fullyFunded && (
-                          <Badge className="bg-green-500 hover:bg-green-600 shrink-0">
+                          <Badge className="bg-green-500 hover:bg-green-600 shrink-0 w-fit text-[11px] sm:text-xs">
                             {isRTL ? 'ممولة بالكامل' : 'Fully Funded'}
                           </Badge>
                         )}
                       </div>
                       
-                      <p className={cn('text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
+                      <p className={cn('text-xs sm:text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
                         {isRTL ? scholarship.descriptionAr : scholarship.description}
                       </p>
                       
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           <span className={isRTL ? 'font-arabic' : ''}>
@@ -776,20 +776,20 @@ export default function ZooliNews() {
                       <div className="flex gap-2 pt-1">
                         <Button 
                           size="sm" 
-                          className="flex-1 gap-2"
+                          className="flex-1 gap-1.5 text-xs sm:text-sm h-9 sm:h-10"
                           onClick={() => window.open(scholarship.url, '_blank')}
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                           {isRTL ? 'التفاصيل' : 'Details'}
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
-                          className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                          className="gap-1.5 text-xs sm:text-sm h-9 sm:h-10 text-green-600 border-green-600 hover:bg-green-50 px-3"
                           onClick={() => shareToWhatsApp(isRTL ? scholarship.titleAr : scholarship.title, 'scholarship')}
                         >
-                          <Share2 className="h-3 w-3" />
-                          {isRTL ? 'واتساب' : 'WhatsApp'}
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">{isRTL ? 'واتساب' : 'WhatsApp'}</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -802,27 +802,27 @@ export default function ZooliNews() {
               {/* Jobs Section */}
               <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-accent" />
-                  <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
+                  <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
+                  <h3 className={cn('font-semibold text-base sm:text-lg', isRTL && 'font-arabic')}>
                     {isRTL ? 'فرص العمل' : 'Jobs'}
                   </h3>
                 </div>
                 
                 {mockJobs.map((job) => (
                   <Card key={job.id} className="border-accent/20 hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className={cn('font-semibold', isRTL && 'font-arabic')}>
+                    <CardContent className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className={cn('font-semibold text-sm sm:text-base leading-snug', isRTL && 'font-arabic')}>
                             {isRTL ? job.roleAr : job.role}
                           </h4>
-                          <p className={cn('text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+                          <p className={cn('text-xs sm:text-sm text-muted-foreground', isRTL && 'font-arabic')}>
                             {isRTL ? job.companyAr : job.company}
                           </p>
                         </div>
                         <Badge 
                           variant={job.isRemote ? 'default' : 'secondary'}
-                          className={cn(job.isRemote && 'bg-blue-500 hover:bg-blue-600')}
+                          className={cn('w-fit text-[11px] sm:text-xs', job.isRemote && 'bg-blue-500 hover:bg-blue-600')}
                         >
                           {job.isRemote ? (
                             <span className="flex items-center gap-1">
@@ -835,32 +835,32 @@ export default function ZooliNews() {
                         </Badge>
                       </div>
                       
-                      <p className={cn('text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
+                      <p className={cn('text-xs sm:text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
                         {isRTL ? job.descriptionAr : job.description}
                       </p>
                       
-                      <div className="flex items-center gap-1 text-sm font-medium text-accent">
-                        <DollarSign className="h-4 w-4" />
+                      <div className="flex items-center gap-1 text-xs sm:text-sm font-medium text-accent">
+                        <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         <span>{isRTL ? job.salaryRangeAr : job.salaryRange}</span>
                       </div>
                       
                       <div className="flex gap-2 pt-1">
                         <Button 
                           size="sm" 
-                          className="flex-1 gap-2 bg-accent hover:bg-accent/90"
+                          className="flex-1 gap-1.5 text-xs sm:text-sm h-9 sm:h-10 bg-accent hover:bg-accent/90"
                           onClick={() => window.open(job.applyUrl, '_blank')}
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                           {isRTL ? 'تقدم الآن' : 'Apply Now'}
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
-                          className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                          className="gap-1.5 text-xs sm:text-sm h-9 sm:h-10 text-green-600 border-green-600 hover:bg-green-50 px-3"
                           onClick={() => shareToWhatsApp(isRTL ? job.roleAr : job.role, 'job')}
                         >
-                          <Share2 className="h-3 w-3" />
-                          {isRTL ? 'واتساب' : 'WhatsApp'}
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">{isRTL ? 'واتساب' : 'WhatsApp'}</span>
                         </Button>
                       </div>
                     </CardContent>
