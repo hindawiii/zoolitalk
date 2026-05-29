@@ -29,7 +29,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
 
 // Helper to calculate remaining time
-function useCountdown(expiresAt?: Date) {
+function useCountdown(expiresAt?: Date | { toDate: () => Date } | { seconds: number }) {
   const [timeLeft, setTimeLeft] = React.useState<string | null>(null)
 
   React.useEffect(() => {
@@ -38,9 +38,22 @@ function useCountdown(expiresAt?: Date) {
       return
     }
 
+    // Convert Firestore Timestamp to Date if needed
+    let expDate: Date
+    if (expiresAt instanceof Date) {
+      expDate = expiresAt
+    } else if (typeof expiresAt === 'object' && 'toDate' in expiresAt && typeof expiresAt.toDate === 'function') {
+      expDate = expiresAt.toDate()
+    } else if (typeof expiresAt === 'object' && 'seconds' in expiresAt) {
+      expDate = new Date(expiresAt.seconds * 1000)
+    } else {
+      setTimeLeft(null)
+      return
+    }
+
     const updateTimeLeft = () => {
       const now = new Date()
-      const diff = expiresAt.getTime() - now.getTime()
+      const diff = expDate.getTime() - now.getTime()
       
       if (diff <= 0) {
         setTimeLeft('انتهى')
