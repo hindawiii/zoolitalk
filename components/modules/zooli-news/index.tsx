@@ -582,7 +582,7 @@ export default function ZooliNews() {
               </div>
             </CardHeader>
             <CardContent className="pb-4 overflow-hidden">
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" dir="ltr">
                 {mockCurrencyRates.map((currency) => (
                   <div 
                     key={currency.code}
@@ -653,7 +653,7 @@ export default function ZooliNews() {
                           {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
                         </Badge>
                       </div>
-                      <CardContent className="p-4 space-y-2">
+                      <CardContent className="p-4 space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
                         <h3 className={cn(
                           'font-semibold text-lg line-clamp-2',
                           isRTL && 'font-arabic'
@@ -667,14 +667,14 @@ export default function ZooliNews() {
                           {isRTL ? article.summaryAr : article.summary}
                         </p>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{isRTL ? article.sourceAr : article.source}</span>
+                          <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
                           <span>{formatTimeAgo(article.publishedAt)}</span>
                         </div>
                       </CardContent>
                     </div>
                   ) : (
                     // Regular article
-                    <CardContent className="p-3 flex gap-3">
+                    <CardContent className="p-3 flex gap-3" dir={isRTL ? 'rtl' : 'ltr'}>
                       <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-secondary shrink-0">
                         <Image
                           src={article.image}
@@ -696,7 +696,7 @@ export default function ZooliNews() {
                           </h3>
                         </div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{isRTL ? article.sourceAr : article.source}</span>
+                          <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
                           <span>{formatTimeAgo(article.publishedAt)}</span>
                         </div>
                       </div>
@@ -709,7 +709,7 @@ export default function ZooliNews() {
             {/* Opportunities Tab */}
             <TabsContent value="opportunities" className="mt-0 space-y-6">
               {/* Scholarships Section */}
-              <div className="space-y-3">
+              <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-5 w-5 text-primary" />
                   <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
@@ -777,7 +777,7 @@ export default function ZooliNews() {
               <Separator />
 
               {/* Jobs Section */}
-              <div className="space-y-3">
+              <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-accent" />
                   <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
