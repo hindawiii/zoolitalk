@@ -91,15 +91,15 @@ export function TrendsTab() {
               transition={{ delay: index * 0.05 }}
               className="bg-white dark:bg-card rounded-xl p-3 border border-[#2D5A27]/10 hover:border-[#2D5A27]/30 transition-colors cursor-pointer"
             >
-              <div className="flex items-start gap-3">
-                {/* Rank - On the right side due to dir="rtl" */}
+              <div className="flex items-start gap-3" style={{ direction: 'rtl' }}>
+                {/* Rank - On the right side for RTL */}
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#2D5A27]/10 flex items-center justify-center">
                   <span className="text-xs font-bold text-[#2D5A27]">{index + 1}</span>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex-1 min-w-0 text-right">
+                  <div className="flex items-center gap-2 flex-wrap justify-start" style={{ direction: 'rtl' }}>
                     <h3 className="text-sm font-bold font-arabic text-foreground truncate">
                       #{trend.tagAr}
                     </h3>
@@ -115,7 +115,7 @@ export function TrendsTab() {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap justify-start" style={{ direction: 'rtl' }}>
                     <div className="flex items-center gap-1 text-muted-foreground">
                       <Users className="h-3 w-3" />
                       <span className="text-[10px] font-arabic">
@@ -131,7 +131,7 @@ export function TrendsTab() {
                   </div>
                 </div>
 
-                {/* Hot Indicator - On the left side due to dir="rtl" */}
+                {/* Hot Indicator - On the left side for RTL */}
                 {trend.isHot && (
                   <div className="flex-shrink-0">
                     <motion.div
