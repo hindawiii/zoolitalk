@@ -36,6 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
 import { OpportunitiesSlider } from './opportunities-slider'
+import { NewsSlider } from './news-slider'
 import { OpportunityDetailSheet } from './opportunity-detail-sheet'
 import type { Opportunity } from '@/lib/types/opportunities'
 
@@ -475,37 +476,49 @@ export default function ZooliNews() {
       <ScrollArea className="flex-1 w-full">
         <div className="py-4 space-y-4 w-full max-w-full">
           {/* Al-Foras Opportunities Slider */}
-          <OpportunitiesSlider onOpportunityClick={handleOpportunityClick} />
+          <OpportunitiesSlider 
+            onOpportunityClick={handleOpportunityClick}
+            onViewAll={() => setMainTab('opportunities')}
+          />
           
-          <div className="px-4 space-y-4">
+          {/* News Slider - Smart Cards for Mobile */}
+          <NewsSlider
+            news={filteredNews}
+            categoryConfig={categoryConfig}
+            onArticleClick={setSelectedArticle}
+            onViewAll={() => setMainTab('news')}
+            formatTimeAgo={formatTimeAgo}
+          />
+          
+          <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
           {/* Quick Currency Calculator */}
           <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-accent/5 w-full overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className={cn('text-sm sm:text-base flex items-center gap-2', isRTL && 'font-arabic')}>
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <Calculator className="h-4 w-4 text-primary" />
+            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+              <CardTitle className={cn('text-xs sm:text-base flex items-center gap-2', isRTL && 'font-arabic')}>
+                <div className="p-1 sm:p-1.5 rounded-lg bg-primary/10">
+                  <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
                 </div>
                 {isRTL ? 'حاسبة العملات السريعة' : 'Quick Currency Calculator'}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2 sm:space-y-4 px-3 sm:px-6">
               {/* Input Row */}
-              <div className="flex gap-2 sm:gap-3 flex-col sm:flex-row">
+              <div className="flex gap-2 items-center">
                 <div className="flex-1">
                   <Input
                     type="number"
                     placeholder={isRTL ? 'المبلغ' : 'Amount'}
                     value={calcAmount}
                     onChange={(e) => setCalcAmount(e.target.value)}
-                    className="text-lg font-semibold h-12 bg-secondary/50 border-border/50"
+                    className="text-sm sm:text-lg font-semibold h-10 sm:h-12 bg-secondary/50 border-border/50"
                   />
                 </div>
                 <Select value={calcCurrency} onValueChange={setCalcCurrency}>
-                  <SelectTrigger className="w-full sm:w-[120px] h-12 bg-secondary/50 border-border/50">
+                  <SelectTrigger className="w-[90px] sm:w-[120px] h-10 sm:h-12 bg-secondary/50 border-border/50">
                     <SelectValue>
-                      <span className="flex items-center gap-1.5">
-                        <span>{selectedRate?.flag}</span>
-                        <span className="font-medium">{calcCurrency}</span>
+                      <span className="flex items-center gap-1">
+                        <span className="text-sm">{selectedRate?.flag}</span>
+                        <span className="font-medium text-xs sm:text-sm">{calcCurrency}</span>
                       </span>
                     </SelectValue>
                   </SelectTrigger>
@@ -524,90 +537,91 @@ export default function ZooliNews() {
               
               {/* Arrow indicator */}
               <div className="flex justify-center">
-                <div className="p-2 rounded-full bg-accent/20">
-                  <ArrowRight className={cn('h-4 w-4 text-accent', isRTL && 'rotate-180')} />
+                <div className="p-1.5 sm:p-2 rounded-full bg-accent/20">
+                  <ArrowRight className={cn('h-3 w-3 sm:h-4 sm:w-4 text-accent', isRTL && 'rotate-180')} />
                 </div>
               </div>
               
               {/* Results */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+              <div className="grid grid-cols-2 gap-2 w-full">
                 {/* Bankak Rate */}
-                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 min-w-0">
-                  <p className={cn('text-xs text-muted-foreground mb-1', isRTL && 'font-arabic')}>
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 border border-primary/20 min-w-0">
+                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1', isRTL && 'font-arabic')}>
                     {isRTL ? 'سعر بنكك' : 'Bankak Rate'}
                   </p>
-                  <p className="text-xl sm:text-lg font-bold text-primary truncate">
+                  <p className="text-base sm:text-xl font-bold text-primary truncate">
                     {bankakResult.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </p>
-                  <p className={cn('text-xs text-muted-foreground', isRTL && 'font-arabic')}>
+                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground', isRTL && 'font-arabic')}>
                     {isRTL ? 'جنيه سوداني' : 'SDG'}
                   </p>
                 </div>
                 
                 {/* Parallel Market Rate */}
-                <div className="p-3 rounded-xl bg-accent/10 border border-accent/20 min-w-0">
-                  <p className={cn('text-xs text-muted-foreground mb-1', isRTL && 'font-arabic')}>
+                <div className="p-2 sm:p-3 rounded-xl bg-accent/10 border border-accent/20 min-w-0">
+                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1', isRTL && 'font-arabic')}>
                     {isRTL ? 'السوق الموازي' : 'Parallel Market'}
                   </p>
-                  <p className="text-xl sm:text-lg font-bold text-accent truncate">
+                  <p className="text-base sm:text-xl font-bold text-accent truncate">
                     {parallelResult.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </p>
-                  <p className={cn('text-xs text-muted-foreground', isRTL && 'font-arabic')}>
+                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground', isRTL && 'font-arabic')}>
                     {isRTL ? 'جنيه سوداني' : 'SDG'}
                   </p>
                 </div>
               </div>
               
               {/* Rate info */}
-              <p className={cn('text-xs text-center text-muted-foreground', isRTL && 'font-arabic')}>
+              <p className={cn('text-[9px] sm:text-xs text-center text-muted-foreground leading-tight', isRTL && 'font-arabic')}>
                 {isRTL 
-                  ? `1 ${selectedRate?.flag} ${calcCurrency} = ${selectedRate?.buyRate.toFixed(2)} (بنكك) / ${selectedRate?.sellRate.toFixed(2)} (موازي) SDG`
-                  : `1 ${selectedRate?.flag} ${calcCurrency} = ${selectedRate?.buyRate.toFixed(2)} (Bankak) / ${selectedRate?.sellRate.toFixed(2)} (Parallel) SDG`
+                  ? `1 ${selectedRate?.flag} ${calcCurrency} = ${selectedRate?.buyRate.toFixed(0)} (بنكك) / ${selectedRate?.sellRate.toFixed(0)} (موازي)`
+                  : `1 ${selectedRate?.flag} ${calcCurrency} = ${selectedRate?.buyRate.toFixed(0)} (Bankak) / ${selectedRate?.sellRate.toFixed(0)} (Parallel)`
                 }
               </p>
             </CardContent>
           </Card>
 
           {/* Sudanese Currency Rates */}
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <CardTitle className={cn('text-sm flex items-center gap-2', isRTL && 'font-arabic')}>
-                  <Banknote className="h-4 w-4 text-accent" />
+          <Card className="overflow-hidden w-full">
+            <CardHeader className="pb-2 px-3 sm:px-6">
+              <div className="flex flex-col gap-1">
+                <CardTitle className={cn('text-xs sm:text-sm flex items-center gap-2', isRTL && 'font-arabic')}>
+                  <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
                   {isRTL ? 'أسعار العملات مقابل الجنيه' : 'Currency Rates (SDG)'}
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   {isRTL ? 'المصدر: بنكك / السوق الموازي' : 'Source: Bankak / Parallel Market'}
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-4 overflow-hidden">
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" dir="ltr">
-                {mockCurrencyRates.map((currency) => (
+            <CardContent className="pb-3 sm:pb-4 overflow-hidden px-2 sm:px-4">
+              {/* Horizontal scroll on mobile, grid on desktop */}
+              <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 overflow-x-auto scrollbar-hide pb-1 sm:pb-0" dir="ltr">
+                {mockCurrencyRates.slice(0, 6).map((currency) => (
                   <div 
                     key={currency.code}
-                    className="flex-shrink-0 p-2.5 rounded-lg bg-secondary/50 min-w-[100px] sm:min-w-[115px]"
+                    className="flex-shrink-0 w-[100px] sm:w-auto p-2 sm:p-2.5 rounded-lg bg-secondary/50"
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="flex items-center gap-1">
-                        <span className="text-base">{currency.flag}</span>
-                        <span className="font-semibold text-sm">{currency.code}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="flex items-center gap-0.5 sm:gap-1">
+                        <span className="text-sm sm:text-base">{currency.flag}</span>
+                        <span className="font-semibold text-[11px] sm:text-sm">{currency.code}</span>
                       </span>
                       <span className={cn(
-                        'text-[10px] font-medium',
+                        'text-[9px] sm:text-[10px] font-medium',
                         currency.change24h >= 0 ? 'text-green-500' : 'text-red-500'
                       )}>
                         {currency.change24h >= 0 ? '+' : ''}{currency.change24h.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="text-[11px] text-muted-foreground space-y-0.5">
+                    <div className="text-[10px] sm:text-[11px] text-muted-foreground space-y-0.5">
                       <div className="flex justify-between">
                         <span>{isRTL ? 'شراء:' : 'Buy:'}</span>
-                        <span className="font-medium text-foreground">{currency.buyRate.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">{currency.buyRate.toFixed(0)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>{isRTL ? 'بيع:' : 'Sell:'}</span>
-                        <span className="font-medium text-foreground">{currency.sellRate.toFixed(2)}</span>
+                        <span className="font-medium text-foreground">{currency.sellRate.toFixed(0)}</span>
                       </div>
                     </div>
                   </div>
@@ -630,80 +644,89 @@ export default function ZooliNews() {
             </TabsList>
 
             {/* Latest News Tab */}
-            <TabsContent value="news" className="mt-0 space-y-4">
-              {filteredNews.map((article, idx) => (
-                <Card 
-                  key={article.id}
-                  className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedArticle(article)}
-                >
-                  {idx === 0 ? (
-                    // Featured article (first one)
-                    <div>
-                      <div className="relative aspect-video bg-secondary">
-                        <Image
-                          src={article.image}
-                          alt={isRTL ? article.titleAr : article.title}
-                          fill
-                          className="object-cover"
-                        />
-                        <Badge 
-                          className="absolute top-3 start-3 bg-primary"
-                        >
-                          {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
-                        </Badge>
-                      </div>
-                      <CardContent className="p-4 space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
-                        <h3 className={cn(
-                          'font-semibold text-lg line-clamp-2',
-                          isRTL && 'font-arabic'
-                        )}>
-                          {isRTL ? article.titleAr : article.title}
-                        </h3>
-                        <p className={cn(
-                          'text-sm text-muted-foreground line-clamp-2',
-                          isRTL && 'font-arabic'
-                        )}>
-                          {isRTL ? article.summaryAr : article.summary}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
-                          <span>{formatTimeAgo(article.publishedAt)}</span>
-                        </div>
-                      </CardContent>
-                    </div>
-                  ) : (
-                    // Regular article
-                    <CardContent className="p-3 flex gap-3" dir={isRTL ? 'rtl' : 'ltr'}>
-                      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-secondary shrink-0">
-                        <Image
-                          src={article.image}
-                          alt={isRTL ? article.titleAr : article.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                          <Badge variant="secondary" className="text-xs mb-1">
+            <TabsContent value="news" className="mt-0">
+              {/* News Grid - Tiles Layout for Mobile */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+                {filteredNews.map((article, idx) => (
+                  <Card 
+                    key={article.id}
+                    className={cn(
+                      'overflow-hidden cursor-pointer hover:shadow-md transition-shadow',
+                      idx === 0 && 'col-span-2 sm:col-span-2 md:col-span-2'
+                    )}
+                    onClick={() => setSelectedArticle(article)}
+                  >
+                    {idx === 0 ? (
+                      // Featured article (first one) - larger tile
+                      <div>
+                        <div className="relative aspect-[16/9] sm:aspect-video bg-secondary">
+                          <Image
+                            src={article.image}
+                            alt={isRTL ? article.titleAr : article.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <Badge 
+                            className="absolute top-2 start-2 sm:top-3 sm:start-3 bg-primary text-[10px] sm:text-xs"
+                          >
                             {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
                           </Badge>
+                        </div>
+                        <CardContent className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
                           <h3 className={cn(
-                            'font-medium text-sm line-clamp-2',
+                            'font-semibold text-sm sm:text-lg line-clamp-2',
                             isRTL && 'font-arabic'
                           )}>
                             {isRTL ? article.titleAr : article.title}
                           </h3>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
-                          <span>{formatTimeAgo(article.publishedAt)}</span>
-                        </div>
+                          <p className={cn(
+                            'text-xs sm:text-sm text-muted-foreground line-clamp-2 hidden sm:block',
+                            isRTL && 'font-arabic'
+                          )}>
+                            {isRTL ? article.summaryAr : article.summary}
+                          </p>
+                          <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
+                            <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
+                            <span>{formatTimeAgo(article.publishedAt)}</span>
+                          </div>
+                        </CardContent>
                       </div>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
+                    ) : (
+                      // Regular article - small tile
+                      <div>
+                        <div className="relative aspect-[4/3] bg-secondary">
+                          <Image
+                            src={article.image}
+                            alt={isRTL ? article.titleAr : article.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <Badge 
+                            variant="secondary" 
+                            className="absolute top-1.5 start-1.5 text-[9px] sm:text-[10px] px-1.5 py-0.5"
+                          >
+                            {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
+                          </Badge>
+                        </div>
+                        <CardContent className="p-2 sm:p-3" dir={isRTL ? 'rtl' : 'ltr'}>
+                          <h3 className={cn(
+                            'font-medium text-[11px] sm:text-sm line-clamp-2 mb-1.5 sm:mb-2',
+                            isRTL && 'font-arabic'
+                          )}>
+                            {isRTL ? article.titleAr : article.title}
+                          </h3>
+                          <div className="flex items-center justify-between text-[9px] sm:text-xs text-muted-foreground">
+                            <span className={cn('truncate max-w-[50%]', isRTL && 'font-arabic')}>
+                              {isRTL ? article.sourceAr : article.source}
+                            </span>
+                            <span className="flex-shrink-0">{formatTimeAgo(article.publishedAt)}</span>
+                          </div>
+                        </CardContent>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
             </TabsContent>
 
             {/* Opportunities Tab */}
