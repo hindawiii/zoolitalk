@@ -140,11 +140,11 @@ export function OpportunityDetailSheet({
         </div>
         
         <ScrollArea className="flex-1">
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
             {/* Title and organization */}
             <div>
               <h2 className={cn(
-                'text-xl font-bold text-foreground mb-2',
+                'text-lg sm:text-xl font-bold text-foreground mb-2',
                 isRTL ? 'font-arabic' : ''
               )}>
                 {isRTL ? opportunity.titleAr : opportunity.title}
@@ -155,40 +155,40 @@ export function OpportunityDetailSheet({
                   <img
                     src={opportunity.organizationLogo}
                     alt=""
-                    className="w-6 h-6 rounded-full"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full"
                   />
                 ) : (
-                  <Building2 className="w-5 h-5 text-muted-foreground" />
+                  <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 )}
                 <span className={cn(
-                  'text-muted-foreground',
+                  'text-sm sm:text-base text-muted-foreground',
                   isRTL ? 'font-arabic' : ''
                 )}>
                   {isRTL ? opportunity.organizationAr : opportunity.organization}
                 </span>
                 {opportunity.isVerified && (
-                  <Verified className="w-5 h-5 text-blue-500" />
+                  <Verified className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                 )}
               </div>
             </div>
             
-            {/* Info grid - 3 columns */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Info grid - responsive */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <InfoCard
-                icon={<MapPin className="w-5 h-5" />}
+                icon={<MapPin className="w-4 h-4 sm:w-5 sm:h-5" />}
                 label={isRTL ? 'الموقع' : 'Location'}
                 value={isRTL ? opportunity.locationAr : opportunity.location}
                 isRTL={isRTL}
               />
               <InfoCard
-                icon={<Calendar className="w-5 h-5" />}
+                icon={<Calendar className="w-4 h-4 sm:w-5 sm:h-5" />}
                 label={isRTL ? 'الموعد النهائي' : 'Deadline'}
                 value={formatDeadline(opportunity.deadline, isRTL)}
                 isHighlight={deadlineStatus === 'closing-soon'}
                 isRTL={isRTL}
               />
               <InfoCard
-                icon={<Briefcase className="w-5 h-5" />}
+                icon={<Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />}
                 label={isRTL ? 'النوع' : 'Type'}
                 value={getCategoryLabel(opportunity.category, isRTL)}
                 isRTL={isRTL}
@@ -344,23 +344,23 @@ interface InfoCardProps {
 function InfoCard({ icon, label, value, isHighlight, isRTL }: InfoCardProps) {
   return (
     <div className={cn(
-      'p-3 rounded-xl text-center',
+      'p-2 sm:p-3 rounded-lg sm:rounded-xl text-center',
       isHighlight ? 'bg-red-500/10' : 'bg-muted/50'
     )}>
       <div className={cn(
-        'flex justify-center mb-1',
+        'flex justify-center mb-0.5 sm:mb-1',
         isHighlight ? 'text-red-500' : 'text-muted-foreground'
       )}>
         {icon}
       </div>
       <p className={cn(
-        'text-xs text-muted-foreground mb-0.5',
+        'text-[10px] sm:text-xs text-muted-foreground mb-0.5',
         isRTL ? 'font-arabic' : ''
       )}>
         {label}
       </p>
       <p className={cn(
-        'text-sm font-medium line-clamp-1',
+        'text-[11px] sm:text-sm font-medium line-clamp-1',
         isHighlight ? 'text-red-500' : 'text-foreground',
         isRTL ? 'font-arabic' : ''
       )}>

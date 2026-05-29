@@ -16,9 +16,6 @@ import {
   Sun,
   CloudRain,
   Wind,
-  Banknote,
-  Calculator,
-  ArrowRight,
   GraduationCap,
   Briefcase,
   MapPin,
@@ -31,8 +28,6 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
 import { OpportunitiesSlider } from './opportunities-slider'
@@ -58,16 +53,6 @@ interface NewsArticle {
 }
 
 type NewsCategory = 'sudan' | 'sports' | 'economy' | 'world'
-
-interface CurrencyRate {
-  code: string
-  flag: string
-  nameEn: string
-  nameAr: string
-  buyRate: number
-  sellRate: number
-  change24h: number
-}
 
 interface WeatherData {
   city: string
@@ -491,154 +476,15 @@ export default function ZooliNews() {
           />
           
           <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
-          {/* Quick Currency Calculator */}
-          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-accent/5 w-full overflow-hidden">
-            <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
-              <CardTitle className={cn('text-xs sm:text-base flex items-center gap-2', isRTL && 'font-arabic')}>
-                <div className="p-1 sm:p-1.5 rounded-lg bg-primary/10">
-                  <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                </div>
-                {isRTL ? 'حاسبة العملات السريعة' : 'Quick Currency Calculator'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-4 px-3 sm:px-6">
-              {/* Input Row */}
-              <div className="flex gap-2 items-center">
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    placeholder={isRTL ? 'المبلغ' : 'Amount'}
-                    value={calcAmount}
-                    onChange={(e) => setCalcAmount(e.target.value)}
-                    className="text-sm sm:text-lg font-semibold h-10 sm:h-12 bg-secondary/50 border-border/50"
-                  />
-                </div>
-                <Select value={calcCurrency} onValueChange={setCalcCurrency}>
-                  <SelectTrigger className="w-[90px] sm:w-[120px] h-10 sm:h-12 bg-secondary/50 border-border/50">
-                    <SelectValue>
-                      <span className="flex items-center gap-1">
-                        <span className="text-sm">{selectedRate?.flag}</span>
-                        <span className="font-medium text-xs sm:text-sm">{calcCurrency}</span>
-                      </span>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockCurrencyRates.map((rate) => (
-                      <SelectItem key={rate.code} value={rate.code}>
-                        <span className="flex items-center gap-2">
-                          <span>{rate.flag}</span>
-                          <span className="font-medium">{rate.code}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Arrow indicator */}
-              <div className="flex justify-center">
-                <div className="p-1.5 sm:p-2 rounded-full bg-accent/20">
-                  <ArrowRight className={cn('h-3 w-3 sm:h-4 sm:w-4 text-accent', isRTL && 'rotate-180')} />
-                </div>
-              </div>
-              
-              {/* Results */}
-              <div className="grid grid-cols-2 gap-2 w-full">
-                {/* Bankak Rate */}
-                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 border border-primary/20 min-w-0">
-                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1', isRTL && 'font-arabic')}>
-                    {isRTL ? 'سعر بنكك' : 'Bankak Rate'}
-                  </p>
-                  <p className="text-base sm:text-xl font-bold text-primary truncate">
-                    {bankakResult.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                  </p>
-                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground', isRTL && 'font-arabic')}>
-                    {isRTL ? 'جنيه سوداني' : 'SDG'}
-                  </p>
-                </div>
-                
-                {/* Parallel Market Rate */}
-                <div className="p-2 sm:p-3 rounded-xl bg-accent/10 border border-accent/20 min-w-0">
-                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1', isRTL && 'font-arabic')}>
-                    {isRTL ? 'السوق الموازي' : 'Parallel Market'}
-                  </p>
-                  <p className="text-base sm:text-xl font-bold text-accent truncate">
-                    {parallelResult.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                  </p>
-                  <p className={cn('text-[10px] sm:text-xs text-muted-foreground', isRTL && 'font-arabic')}>
-                    {isRTL ? 'جنيه سوداني' : 'SDG'}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Rate info */}
-              <p className={cn('text-[9px] sm:text-xs text-center text-muted-foreground leading-tight', isRTL && 'font-arabic')}>
-                {isRTL 
-                  ? `1 ${selectedRate?.flag} ${calcCurrency} = ${selectedRate?.buyRate.toFixed(0)} (بنكك) / ${selectedRate?.sellRate.toFixed(0)} (موازي)`
-                  : `1 ${selectedRate?.flag} ${calcCurrency} = ${selectedRate?.buyRate.toFixed(0)} (Bankak) / ${selectedRate?.sellRate.toFixed(0)} (Parallel)`
-                }
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Sudanese Currency Rates */}
-          <Card className="overflow-hidden w-full">
-            <CardHeader className="pb-2 px-3 sm:px-6">
-              <div className="flex flex-col gap-1">
-                <CardTitle className={cn('text-xs sm:text-sm flex items-center gap-2', isRTL && 'font-arabic')}>
-                  <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
-                  {isRTL ? 'أسعار العملات مقابل الجنيه' : 'Currency Rates (SDG)'}
-                </CardTitle>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">
-                  {isRTL ? 'المصدر: بنكك / السوق الموازي' : 'Source: Bankak / Parallel Market'}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-3 sm:pb-4 overflow-hidden px-2 sm:px-4">
-              {/* Horizontal scroll on mobile, grid on desktop */}
-              <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 overflow-x-auto scrollbar-hide pb-1 sm:pb-0" dir="ltr">
-                {mockCurrencyRates.slice(0, 6).map((currency) => (
-                  <div 
-                    key={currency.code}
-                    className="flex-shrink-0 w-[100px] sm:w-auto p-2 sm:p-2.5 rounded-lg bg-secondary/50"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="flex items-center gap-0.5 sm:gap-1">
-                        <span className="text-sm sm:text-base">{currency.flag}</span>
-                        <span className="font-semibold text-[11px] sm:text-sm">{currency.code}</span>
-                      </span>
-                      <span className={cn(
-                        'text-[9px] sm:text-[10px] font-medium',
-                        currency.change24h >= 0 ? 'text-green-500' : 'text-red-500'
-                      )}>
-                        {currency.change24h >= 0 ? '+' : ''}{currency.change24h.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] text-muted-foreground space-y-0.5">
-                      <div className="flex justify-between">
-                        <span>{isRTL ? 'شراء:' : 'Buy:'}</span>
-                        <span className="font-medium text-foreground">{currency.buyRate.toFixed(0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{isRTL ? 'بيع:' : 'Sell:'}</span>
-                        <span className="font-medium text-foreground">{currency.sellRate.toFixed(0)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Main Content Tabs */}
           <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'news' | 'opportunities')} className="w-full">
-            <TabsList className="w-full grid grid-cols-2 mb-4">
-              <TabsTrigger value="news" className={cn('gap-2', isRTL && 'font-arabic')}>
-                <Globe className="h-4 w-4" />
+            <TabsList className="w-full grid grid-cols-2 mb-3 sm:mb-4 h-10 sm:h-11">
+              <TabsTrigger value="news" className={cn('gap-1.5 sm:gap-2 text-xs sm:text-sm', isRTL && 'font-arabic')}>
+                <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {isRTL ? 'آخر الأخبار' : 'Latest News'}
               </TabsTrigger>
-              <TabsTrigger value="opportunities" className={cn('gap-2', isRTL && 'font-arabic')}>
-                <Briefcase className="h-4 w-4" />
+              <TabsTrigger value="opportunities" className={cn('gap-1.5 sm:gap-2 text-xs sm:text-sm', isRTL && 'font-arabic')}>
+                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {isRTL ? 'الفرص' : 'Opportunities'}
               </TabsTrigger>
             </TabsList>
@@ -730,35 +576,35 @@ export default function ZooliNews() {
             </TabsContent>
 
             {/* Opportunities Tab */}
-            <TabsContent value="opportunities" className="mt-0 space-y-6">
+            <TabsContent value="opportunities" className="mt-0 space-y-5">
               {/* Scholarships Section */}
               <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
+                  <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  <h3 className={cn('font-semibold text-base sm:text-lg', isRTL && 'font-arabic')}>
                     {isRTL ? 'المنح الدراسية' : 'Scholarships'}
                   </h3>
                 </div>
                 
                 {mockScholarships.map((scholarship) => (
                   <Card key={scholarship.id} className="border-primary/20 hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className={cn('font-semibold line-clamp-2', isRTL && 'font-arabic')}>
+                    <CardContent className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <h4 className={cn('font-semibold text-sm sm:text-base leading-snug line-clamp-2', isRTL && 'font-arabic')}>
                           {isRTL ? scholarship.titleAr : scholarship.title}
                         </h4>
                         {scholarship.fullyFunded && (
-                          <Badge className="bg-green-500 hover:bg-green-600 shrink-0">
+                          <Badge className="bg-green-500 hover:bg-green-600 shrink-0 w-fit text-[11px] sm:text-xs">
                             {isRTL ? 'ممولة بالكامل' : 'Fully Funded'}
                           </Badge>
                         )}
                       </div>
                       
-                      <p className={cn('text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
+                      <p className={cn('text-xs sm:text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
                         {isRTL ? scholarship.descriptionAr : scholarship.description}
                       </p>
                       
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           <span className={isRTL ? 'font-arabic' : ''}>
@@ -776,20 +622,20 @@ export default function ZooliNews() {
                       <div className="flex gap-2 pt-1">
                         <Button 
                           size="sm" 
-                          className="flex-1 gap-2"
+                          className="flex-1 gap-1.5 text-xs sm:text-sm h-9 sm:h-10"
                           onClick={() => window.open(scholarship.url, '_blank')}
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                           {isRTL ? 'التفاصيل' : 'Details'}
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
-                          className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                          className="gap-1.5 text-xs sm:text-sm h-9 sm:h-10 text-green-600 border-green-600 hover:bg-green-50 px-3"
                           onClick={() => shareToWhatsApp(isRTL ? scholarship.titleAr : scholarship.title, 'scholarship')}
                         >
-                          <Share2 className="h-3 w-3" />
-                          {isRTL ? 'واتساب' : 'WhatsApp'}
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">{isRTL ? 'واتساب' : 'WhatsApp'}</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -802,27 +648,27 @@ export default function ZooliNews() {
               {/* Jobs Section */}
               <div className="space-y-3" dir={isRTL ? 'rtl' : 'ltr'}>
                 <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-accent" />
-                  <h3 className={cn('font-semibold text-lg', isRTL && 'font-arabic')}>
+                  <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
+                  <h3 className={cn('font-semibold text-base sm:text-lg', isRTL && 'font-arabic')}>
                     {isRTL ? 'فرص العمل' : 'Jobs'}
                   </h3>
                 </div>
                 
                 {mockJobs.map((job) => (
                   <Card key={job.id} className="border-accent/20 hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h4 className={cn('font-semibold', isRTL && 'font-arabic')}>
+                    <CardContent className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className={cn('font-semibold text-sm sm:text-base leading-snug', isRTL && 'font-arabic')}>
                             {isRTL ? job.roleAr : job.role}
                           </h4>
-                          <p className={cn('text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+                          <p className={cn('text-xs sm:text-sm text-muted-foreground', isRTL && 'font-arabic')}>
                             {isRTL ? job.companyAr : job.company}
                           </p>
                         </div>
                         <Badge 
                           variant={job.isRemote ? 'default' : 'secondary'}
-                          className={cn(job.isRemote && 'bg-blue-500 hover:bg-blue-600')}
+                          className={cn('w-fit text-[11px] sm:text-xs', job.isRemote && 'bg-blue-500 hover:bg-blue-600')}
                         >
                           {job.isRemote ? (
                             <span className="flex items-center gap-1">
@@ -835,32 +681,32 @@ export default function ZooliNews() {
                         </Badge>
                       </div>
                       
-                      <p className={cn('text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
+                      <p className={cn('text-xs sm:text-sm text-muted-foreground line-clamp-2', isRTL && 'font-arabic')}>
                         {isRTL ? job.descriptionAr : job.description}
                       </p>
                       
-                      <div className="flex items-center gap-1 text-sm font-medium text-accent">
-                        <DollarSign className="h-4 w-4" />
+                      <div className="flex items-center gap-1 text-xs sm:text-sm font-medium text-accent">
+                        <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         <span>{isRTL ? job.salaryRangeAr : job.salaryRange}</span>
                       </div>
                       
                       <div className="flex gap-2 pt-1">
                         <Button 
                           size="sm" 
-                          className="flex-1 gap-2 bg-accent hover:bg-accent/90"
+                          className="flex-1 gap-1.5 text-xs sm:text-sm h-9 sm:h-10 bg-accent hover:bg-accent/90"
                           onClick={() => window.open(job.applyUrl, '_blank')}
                         >
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3.5 w-3.5" />
                           {isRTL ? 'تقدم الآن' : 'Apply Now'}
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
-                          className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                          className="gap-1.5 text-xs sm:text-sm h-9 sm:h-10 text-green-600 border-green-600 hover:bg-green-50 px-3"
                           onClick={() => shareToWhatsApp(isRTL ? job.roleAr : job.role, 'job')}
                         >
-                          <Share2 className="h-3 w-3" />
-                          {isRTL ? 'واتساب' : 'WhatsApp'}
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">{isRTL ? 'واتساب' : 'WhatsApp'}</span>
                         </Button>
                       </div>
                     </CardContent>
