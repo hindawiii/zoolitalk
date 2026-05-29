@@ -68,7 +68,7 @@ export function ListingDetail({ listing, onClose, onStartWansa }: ListingDetailP
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b">
         <Button variant="ghost" size="icon" onClick={onClose}>

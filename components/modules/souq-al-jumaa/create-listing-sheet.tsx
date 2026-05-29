@@ -89,7 +89,7 @@ export function CreateListingSheet({ open, onOpenChange }: CreateListingSheetPro
   }
 
   const canProceedStep1 = images.length > 0
-  const canProceedStep2 = title.trim() && titleAr.trim() && description.trim() && descriptionAr.trim()
+  const canProceedStep2 = (title.trim() || titleAr.trim()) && (description.trim() || descriptionAr.trim())
   const canSubmit = price && Number(price) > 0
 
   const handleSubmit = async () => {
@@ -135,7 +135,7 @@ export function CreateListingSheet({ open, onOpenChange }: CreateListingSheetPro
       if (!value) resetForm()
       onOpenChange(value)
     }}>
-      <SheetContent side={isRTL ? 'right' : 'left'} className="w-full sm:max-w-md p-0">
+      <SheetContent side={isRTL ? 'right' : 'left'} className="w-full sm:max-w-md p-0" dir={isRTL ? 'rtl' : 'ltr'}>
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className={cn(isRTL && 'font-arabic')}>
@@ -234,52 +234,31 @@ export function CreateListingSheet({ open, onOpenChange }: CreateListingSheetPro
                   </Select>
                 </div>
 
-                {/* Title (English) */}
+                {/* Title */}
                 <div className="space-y-2">
-                  <Label>Title (English)</Label>
+                  <Label className={cn(isRTL && 'font-arabic')}>
+                    {isRTL ? 'العنوان' : 'Title'}
+                  </Label>
                   <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. iPhone 15 Pro Max"
+                    value={isRTL ? titleAr : title}
+                    onChange={(e) => isRTL ? setTitleAr(e.target.value) : setTitle(e.target.value)}
+                    placeholder={isRTL ? 'مثال: آيفون 15 برو ماكس' : 'e.g. iPhone 15 Pro Max'}
+                    className={cn(isRTL && 'font-arabic')}
                     maxLength={100}
                   />
                 </div>
 
-                {/* Title (Arabic) */}
+                {/* Description */}
                 <div className="space-y-2">
-                  <Label className="font-arabic">العنوان (بالعربي)</Label>
-                  <Input
-                    value={titleAr}
-                    onChange={(e) => setTitleAr(e.target.value)}
-                    placeholder="مثال: آيفون 15 برو ماكس"
-                    className="font-arabic text-right"
-                    dir="rtl"
-                    maxLength={100}
-                  />
-                </div>
-
-                {/* Description (English) */}
-                <div className="space-y-2">
-                  <Label>Description (English)</Label>
+                  <Label className={cn(isRTL && 'font-arabic')}>
+                    {isRTL ? 'الوصف' : 'Description'}
+                  </Label>
                   <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe your item..."
-                    rows={3}
-                    maxLength={1000}
-                  />
-                </div>
-
-                {/* Description (Arabic) */}
-                <div className="space-y-2">
-                  <Label className="font-arabic">الوصف (بالعربي)</Label>
-                  <Textarea
-                    value={descriptionAr}
-                    onChange={(e) => setDescriptionAr(e.target.value)}
-                    placeholder="اوصف المنتج بالتفصيل..."
-                    className="font-arabic text-right"
-                    dir="rtl"
-                    rows={3}
+                    value={isRTL ? descriptionAr : description}
+                    onChange={(e) => isRTL ? setDescriptionAr(e.target.value) : setDescription(e.target.value)}
+                    placeholder={isRTL ? 'اوصف المنتج بالتفصيل...' : 'Describe your item...'}
+                    className={cn(isRTL && 'font-arabic')}
+                    rows={4}
                     maxLength={1000}
                   />
                 </div>
@@ -320,25 +299,16 @@ export function CreateListingSheet({ open, onOpenChange }: CreateListingSheetPro
                   <Switch checked={isBarter} onCheckedChange={setIsBarter} />
                 </div>
 
-                {/* Location (English) */}
+                {/* Location */}
                 <div className="space-y-2">
-                  <Label>Location (English)</Label>
+                  <Label className={cn(isRTL && 'font-arabic')}>
+                    {isRTL ? 'الموقع' : 'Location'}
+                  </Label>
                   <Input
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Khartoum, Bahri"
-                  />
-                </div>
-
-                {/* Location (Arabic) */}
-                <div className="space-y-2">
-                  <Label className="font-arabic">الموقع (بالعربي)</Label>
-                  <Input
-                    value={locationAr}
-                    onChange={(e) => setLocationAr(e.target.value)}
-                    placeholder="مثال: الخرطوم، بحري"
-                    className="font-arabic text-right"
-                    dir="rtl"
+                    value={isRTL ? locationAr : location}
+                    onChange={(e) => isRTL ? setLocationAr(e.target.value) : setLocation(e.target.value)}
+                    placeholder={isRTL ? 'مثال: الخرطوم، بحري' : 'e.g. Khartoum, Bahri'}
+                    className={cn(isRTL && 'font-arabic')}
                   />
                 </div>
               </div>
