@@ -373,10 +373,10 @@ export default function ZoolProfile() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full bg-background w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col h-full bg-background w-full max-w-full overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
         <ScrollArea className="flex-1">
           {/* Cover Photo */}
-          <div className="relative h-40 bg-gradient-to-br from-[#2D5A27] via-[#2D5A27]/80 to-emerald-700">
+          <div className="relative h-32 sm:h-40 bg-gradient-to-br from-[#2D5A27] via-[#2D5A27]/80 to-emerald-700">
             {displayUser?.coverPhoto && (
               <Image
                 src={displayUser.coverPhoto}
@@ -424,13 +424,13 @@ export default function ZoolProfile() {
           </div>
 
           {/* Profile Header */}
-          <div className="relative px-4 pb-4">
+          <div className="relative px-3 sm:px-4 pb-4">
             {/* Animated Avatar with Rank Frame */}
-            <div className="relative -mt-16 mb-4 flex justify-center">
+            <div className="relative -mt-14 sm:-mt-16 mb-3 sm:mb-4 flex justify-center">
               <AnimatedAvatarFrame rank={userRank}>
-                <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
                   <AvatarImage src={displayUser?.avatar} alt={displayUser?.name} />
-                  <AvatarFallback className="text-3xl bg-[#2D5A27] text-white font-arabic">
+                  <AvatarFallback className="text-2xl sm:text-3xl bg-[#2D5A27] text-white font-arabic">
                     {displayUser?.nickname?.[0] || displayUser?.nameAr?.[0] || 'ز'}
                   </AvatarFallback>
                 </Avatar>
@@ -443,7 +443,7 @@ export default function ZoolProfile() {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className={cn(
-                      'absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r',
+                      'absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold text-white bg-gradient-to-r',
                       rankInfo.gradient
                     )}
                   >
@@ -464,14 +464,14 @@ export default function ZoolProfile() {
                 <motion.h1
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-2xl font-bold font-arabic text-[#2D5A27]"
+                  className="text-xl sm:text-2xl font-bold font-arabic text-[#2D5A27]"
                 >
                   {displayUser.nickname}
                 </motion.h1>
               )}
               
               <div className="flex items-center justify-center gap-2">
-                <p className={cn('text-base font-medium', isRTL && 'font-arabic')}>
+                <p className={cn('text-sm sm:text-base font-medium', isRTL && 'font-arabic')}>
                   {isRTL ? displayUser?.nameAr : displayUser?.name || (isRTL ? 'مستخدم راكوبتنا' : 'Rakobatna User')}
                 </p>
                 {displayUser?.isVerified && (
@@ -479,11 +479,11 @@ export default function ZoolProfile() {
                 )}
               </div>
 
-              <p className="text-muted-foreground text-sm">@{displayUser?.username || 'rakobatna_user'}</p>
+              <p className="text-muted-foreground text-xs sm:text-sm">@{displayUser?.username || 'rakobatna_user'}</p>
             </div>
 
             {/* Status Badges Row */}
-            <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-3 flex-wrap px-2">
               {/* Social Status - Dropdown for own profile, Badge for others */}
               {isOwnProfile ? (
                 <DropdownMenu>
@@ -562,7 +562,7 @@ export default function ZoolProfile() {
             {/* Bio */}
             {displayUser?.bio && (
               <p className={cn(
-                'text-sm max-w-xs mx-auto text-center mt-3',
+                'text-xs sm:text-sm max-w-xs mx-auto text-center mt-3 px-2',
                 isRTL && 'font-arabic'
               )}>
                 {isRTL ? displayUser.bioAr : displayUser.bio}
@@ -570,7 +570,7 @@ export default function ZoolProfile() {
             )}
 
             {/* Location & Joined */}
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground mt-2">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground mt-2 flex-wrap">
               {displayUser?.location && (
                 <span className="flex items-center gap-1 font-arabic">
                   <MapPin className="h-3 w-3" />
@@ -584,16 +584,16 @@ export default function ZoolProfile() {
             </div>
 
             {/* Stats Bar */}
-            <div className="grid grid-cols-4 gap-2 mt-4 p-3 rounded-xl bg-secondary/50">
+            <div className="grid grid-cols-4 gap-1 sm:gap-2 mt-4 p-2 sm:p-3 rounded-xl bg-secondary/50">
               {stats.map((stat, idx) => (
                 <button
                   key={idx}
-                  className="flex flex-col items-center gap-0.5 hover:bg-secondary rounded-lg p-2 transition-colors"
+                  className="flex flex-col items-center gap-0.5 hover:bg-secondary rounded-lg p-1.5 sm:p-2 transition-colors"
                 >
-                  <span className="text-lg font-bold text-[#2D5A27]">
+                  <span className="text-base sm:text-lg font-bold text-[#2D5A27]">
                     {formatNumber(stat.value)}
                   </span>
-                  <span className={cn('text-[10px] text-muted-foreground', isRTL && 'font-arabic')}>
+                  <span className={cn('text-[9px] sm:text-[10px] text-muted-foreground', isRTL && 'font-arabic')}>
                     {stat.label}
                   </span>
                 </button>
@@ -601,47 +601,47 @@ export default function ZoolProfile() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-2 sm:gap-3 mt-4">
               {isOwnProfile ? (
                 <>
                   <Button 
-                    className="flex-1 gap-2" 
+                    className="flex-1 gap-1.5 sm:gap-2 text-xs sm:text-sm h-9 sm:h-10" 
                     variant="outline"
                     onClick={() => setSettingsOpen(true)}
                   >
-                    <Edit3 className="h-4 w-4" />
+                    <Edit3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="font-arabic">{isRTL ? 'تعديل الملف' : 'Edit Profile'}</span>
                   </Button>
                   <Button 
-                    className="flex-1 gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white"
+                    className="flex-1 gap-1.5 sm:gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white text-xs sm:text-sm h-9 sm:h-10"
                     onClick={() => triggerGift('jabana', displayUser?.name || 'User')}
                   >
-                    <Gift className="h-4 w-4" />
+                    <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="font-arabic">{isRTL ? 'إرسال هدية' : 'Send Gift'}</span>
                   </Button>
                 </>
               ) : (
                 <>
                   <Button 
-                    className="flex-1 gap-2" 
+                    className="flex-1 gap-1.5 sm:gap-2 text-xs sm:text-sm h-9 sm:h-10" 
                     variant="outline"
                     onClick={handleStartChat}
                   >
-                    <MessageCircle className="h-4 w-4" />
+                    <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="font-arabic">{isRTL ? 'مراسلة' : 'Message'}</span>
                   </Button>
                   <Button 
-                    className="flex-1 gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white"
+                    className="flex-1 gap-1.5 sm:gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white text-xs sm:text-sm h-9 sm:h-10"
                     onClick={() => triggerGift('jabana', displayUser?.name || 'User')}
                   >
-                    <Gift className="h-4 w-4" />
+                    <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     <span className="font-arabic">{isRTL ? 'إرسال هدية' : 'Send Gift'}</span>
                   </Button>
                 </>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 shrink-0">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -664,16 +664,16 @@ export default function ZoolProfile() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="px-4 py-4 border-t"
+              className="px-3 sm:px-4 py-3 sm:py-4 border-t"
             >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold font-arabic text-[#2D5A27]">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h3 className="font-bold font-arabic text-[#2D5A27] text-sm sm:text-base">
                   {isRTL ? 'متحف الساحة' : 'Al-Saha Museum'}
                 </h3>
                 <Star className="h-4 w-4 text-[#2D5A27]" />
               </div>
               <ScrollArea className="w-full">
-                <div className="flex gap-3 pb-2">
+                <div className="flex gap-2 sm:gap-3 pb-2">
                   {displayUser.featuredPosts.map((post) => (
                     <FeaturedPostCard
                       key={post.id}
@@ -698,16 +698,16 @@ export default function ZoolProfile() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="px-4 py-4 border-t"
+              className="px-3 sm:px-4 py-3 sm:py-4 border-t"
             >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold font-arabic text-[#2D5A27]">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h3 className="font-bold font-arabic text-[#2D5A27] text-sm sm:text-base">
                   {isRTL ? 'هدايا الكرم' : 'Gift Showcase'}
                 </h3>
                 <Gift className="h-4 w-4 text-[#2D5A27]" />
               </div>
               <ScrollArea className="w-full">
-                <div className="flex gap-3 pb-2">
+                <div className="flex gap-2 sm:gap-3 pb-2">
                   {displayUser.gifts.map((gift) => (
                     <GiftCard key={gift.id} gift={gift} isRTL={isRTL} />
                   ))}
