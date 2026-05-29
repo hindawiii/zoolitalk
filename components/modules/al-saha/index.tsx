@@ -37,9 +37,9 @@ export default function AlSaha() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden bg-[#F5F5DC] dark:bg-background">
+    <div className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
       {/* Sticky Header with Segmented Control */}
-      <div className="sticky top-0 z-30 bg-[#1a3a18] dark:bg-[#0f1f0e] shadow-md">
+      <div className="flex-shrink-0 bg-[#1a3a18] dark:bg-[#0f1f0e] shadow-md">
         {/* Title Bar */}
         <div className="flex items-center justify-center px-4 py-3 border-b border-[#2D5A27]/30">
           <h1 className="text-xl font-bold text-[#F5F0E1] font-arabic">
@@ -71,7 +71,7 @@ export default function AlSaha() {
                 key={segment.id}
                 onClick={() => setActiveSegment(segment.id)}
                 className={cn(
-                  'relative z-10 flex-1 py-2 text-xs sm:text-sm font-bold font-arabic transition-all duration-200 rounded-lg',
+                  'relative z-10 flex-1 py-2 text-xs sm:text-sm font-bold font-arabic transition-all duration-200 rounded-lg text-center',
                   activeSegment === segment.id
                     ? 'text-[#F5F0E1]'
                     : 'text-[#F5F0E1]/60 hover:text-[#F5F0E1]/80'
@@ -93,7 +93,7 @@ export default function AlSaha() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: activeSegment === 'feed' ? 20 : -20 }}
             transition={{ duration: 0.2 }}
-            className="h-full"
+            className="h-full w-full"
           >
             {renderSegmentContent()}
           </motion.div>

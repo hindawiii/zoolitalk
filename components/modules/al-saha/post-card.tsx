@@ -144,7 +144,7 @@ export function PostCard({ post }: PostCardProps) {
   const currentReaction = reactions.find((r) => r.type === post.userReaction)
 
   return (
-    <article className="py-4 relative">
+    <article className="py-3 relative w-full max-w-full overflow-hidden box-border">
       {/* Countdown Badge for Timed Posts */}
       {countdown && post.expiry !== 'permanent' && (
         <motion.div
@@ -158,32 +158,32 @@ export function PostCard({ post }: PostCardProps) {
       )}
       
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 mb-3">
-        <Avatar className="h-10 w-10">
+      <div className="flex items-center gap-2 px-3 mb-2">
+        <Avatar className="h-9 w-9 flex-shrink-0">
           <AvatarImage src={post.authorAvatar} alt={post.authorName} />
-          <AvatarFallback className="bg-primary/10 text-primary">
+          <AvatarFallback className="bg-primary/10 text-primary text-sm">
             {(isRTL ? post.authorNameAr : post.authorName)[0]}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <p className={cn('font-semibold text-sm', isRTL && 'font-arabic')}>
+          <p className={cn('font-semibold text-sm truncate', isRTL && 'font-arabic')}>
             {isRTL ? post.authorNameAr : post.authorName}
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>{formatTime(post.timestamp)}</span>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground flex-wrap">
+            <span className="truncate max-w-[80px]">{formatTime(post.timestamp)}</span>
             {post.location && (
               <>
                 <span>•</span>
-                <MapPin className="h-3 w-3" />
-                <span>{post.location}</span>
+                <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                <span className="truncate max-w-[60px]">{post.location}</span>
               </>
             )}
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
@@ -195,8 +195,8 @@ export function PostCard({ post }: PostCardProps) {
       </div>
 
       {/* Content */}
-      <div className="px-4 mb-3">
-        <p className={cn('text-sm leading-relaxed', isRTL && 'font-arabic')}>
+      <div className="px-3 mb-2 w-full" style={{ maxWidth: 'calc(100vw - 24px)' }}>
+        <p className={cn('text-sm leading-relaxed', isRTL && 'font-arabic')} style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>
           {isRTL ? post.contentAr : post.content}
         </p>
       </div>
@@ -264,7 +264,7 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Reaction Stats */}
       {totalReactions > 0 && (
-        <div className="px-4 mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="px-3 mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
           <div className="flex -space-x-1">
             {reactions
               .filter((r) => post.reactions[r.type] > 0)
@@ -278,15 +278,15 @@ export function PostCard({ post }: PostCardProps) {
       )}
 
       {/* Actions */}
-      <div className="px-4 flex items-center justify-between">
-        <div className="flex items-center gap-1">
+      <div className="px-3 flex items-center justify-between">
+        <div className="flex items-center gap-0.5">
           {/* Like button with reactions */}
           <div className="relative">
             <Button
               variant="ghost"
               size="sm"
               className={cn(
-                'gap-1.5',
+                'gap-1 px-2 h-8',
                 post.userReaction && 'text-primary'
               )}
               onClick={handleLikePress}
@@ -297,11 +297,11 @@ export function PostCard({ post }: PostCardProps) {
               onTouchEnd={handleLongPressEnd}
             >
               {currentReaction ? (
-                <span className="text-lg">{currentReaction.emoji}</span>
+                <span className="text-base">{currentReaction.emoji}</span>
               ) : (
-                <Heart className={cn('h-5 w-5', post.userReaction && 'fill-current')} />
+                <Heart className={cn('h-4 w-4', post.userReaction && 'fill-current')} />
               )}
-              <span className={cn('text-sm', isRTL && 'font-arabic')}>
+              <span className={cn('text-xs', isRTL && 'font-arabic')}>
                 {currentReaction
                   ? (isRTL ? currentReaction.label.ar : currentReaction.label.en)
                   : (isRTL ? 'إعجاب' : 'Like')}
@@ -335,15 +335,15 @@ export function PostCard({ post }: PostCardProps) {
           </div>
 
           {/* Comment button */}
-          <Button variant="ghost" size="sm" className="gap-1.5">
-            <MessageCircle className="h-5 w-5" />
-            <span>{post.commentsCount}</span>
+          <Button variant="ghost" size="sm" className="gap-1 px-2 h-8">
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-xs">{post.commentsCount}</span>
           </Button>
 
           {/* Share button */}
-          <Button variant="ghost" size="sm" className="gap-1.5">
-            <Share2 className="h-5 w-5" />
-            <span>{post.sharesCount}</span>
+          <Button variant="ghost" size="sm" className="gap-1 px-2 h-8">
+            <Share2 className="h-4 w-4" />
+            <span className="text-xs">{post.sharesCount}</span>
           </Button>
         </div>
 
@@ -351,9 +351,10 @@ export function PostCard({ post }: PostCardProps) {
         <Button
           variant="ghost"
           size="icon"
+          className="h-8 w-8"
           onClick={() => setIsBookmarked(!isBookmarked)}
         >
-          <Bookmark className={cn('h-5 w-5', isBookmarked && 'fill-current')} />
+          <Bookmark className={cn('h-4 w-4', isBookmarked && 'fill-current')} />
         </Button>
       </div>
 

@@ -78,23 +78,23 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white dark:bg-card rounded-xl border border-[#2D5A27]/10 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white dark:bg-card rounded-lg border border-[#2D5A27]/10 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onOpenDetail(service)}
     >
       {/* Header */}
-      <div className="p-4 border-b border-[#2D5A27]/10">
-        <div className="flex items-start gap-3">
+      <div className="p-2.5 border-b border-[#2D5A27]/10">
+        <div className="flex items-start gap-2">
           <div className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
+            'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
             getCategoryColor(service.category)
           )}>
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold font-arabic text-sm truncate">{service.nameAr}</h3>
+            <h3 className="font-bold font-arabic text-xs truncate">{service.nameAr}</h3>
             <div className="flex items-center gap-1 mt-0.5">
-              <MapPin className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-arabic truncate">
+              <MapPin className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+              <span className="text-[10px] text-muted-foreground font-arabic truncate">
                 {service.addressAr}
               </span>
             </div>
@@ -102,24 +102,24 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
         </div>
 
         {/* Status badge */}
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between mt-2">
           <Badge 
             variant="outline" 
             className={cn(
-              'font-arabic text-[10px]',
+              'font-arabic text-[9px] px-1.5 py-0.5 h-auto',
               service.isOpen 
                 ? 'bg-green-500/10 text-green-600 border-green-200' 
                 : 'bg-red-500/10 text-red-600 border-red-200'
             )}
           >
             {service.isOpen ? (
-              <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> مفتوح</span>
+              <span className="flex items-center gap-0.5"><CheckCircle2 className="h-2.5 w-2.5" /> مفتوح</span>
             ) : (
-              <span className="flex items-center gap-1"><XCircle className="h-3 w-3" /> مغلق</span>
+              <span className="flex items-center gap-0.5"><XCircle className="h-2.5 w-2.5" /> مغلق</span>
             )}
           </Badge>
           {service.distance && (
-            <span className="text-xs text-muted-foreground font-arabic">
+            <span className="text-[10px] text-muted-foreground font-arabic">
               {service.distance}
             </span>
           )}
@@ -128,31 +128,25 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
 
       {/* Latest status */}
       {latestStatus && (
-        <div className="p-3 bg-[#F5F5DC]/50 dark:bg-secondary/30">
-          <div className="flex items-start gap-2">
-            <MessageSquare className="h-3.5 w-3.5 text-[#2D5A27] mt-0.5 flex-shrink-0" />
+        <div className="p-2 bg-[#F5F5DC]/50 dark:bg-secondary/30">
+          <div className="flex items-start gap-1.5">
+            <MessageSquare className="h-3 w-3 text-[#2D5A27] mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-arabic leading-relaxed text-foreground">
+              <p className="text-[10px] font-arabic leading-relaxed text-foreground line-clamp-2">
                 {latestStatus.messageAr}
               </p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-muted-foreground font-arabic">
-                  {latestStatus.authorName}
-                </span>
-                <span className="text-[10px] text-muted-foreground">•</span>
-                <span className="text-[10px] text-muted-foreground font-arabic">
-                  {formatDistanceToNow(latestStatus.timestamp, { locale: ar, addSuffix: true })}
-                </span>
-              </div>
+              <span className="text-[9px] text-muted-foreground font-arabic">
+                {latestStatus.authorName}
+              </span>
             </div>
           </div>
         </div>
       )}
 
       {service.statusUpdates.length === 0 && (
-        <div className="p-3 bg-[#F5F5DC]/50 dark:bg-secondary/30">
-          <p className="text-xs text-muted-foreground font-arabic text-center">
-            ما في تحديثات حالياً
+        <div className="p-2 bg-[#F5F5DC]/50 dark:bg-secondary/30">
+          <p className="text-[10px] text-muted-foreground font-arabic text-center">
+            ما في تحديثات
           </p>
         </div>
       )}
@@ -292,10 +286,10 @@ export function RadarTab() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F5DC] dark:bg-background">
+    <div className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
       {/* Category Filter */}
-      <div className="sticky top-0 z-10 px-4 py-3 bg-white dark:bg-card border-b border-[#2D5A27]/10">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <div className="flex-shrink-0 px-3 py-2.5 bg-white dark:bg-card border-b border-[#2D5A27]/10">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
           {categories.map((category) => {
             const Icon = category.icon
             return (
@@ -305,13 +299,13 @@ export function RadarTab() {
                 size="sm"
                 onClick={() => setSelectedCategory(category.id)}
                 className={cn(
-                  'gap-1.5 font-arabic whitespace-nowrap flex-shrink-0',
+                  'gap-1 font-arabic whitespace-nowrap flex-shrink-0 text-xs px-2.5 h-8',
                   selectedCategory === category.id
                     ? 'bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white'
                     : 'border-[#2D5A27]/20 hover:bg-[#2D5A27]/10'
                 )}
               >
-                {Icon && <Icon className="h-4 w-4" />}
+                {Icon && <Icon className="h-3.5 w-3.5" />}
                 {category.label}
               </Button>
             )
@@ -321,9 +315,9 @@ export function RadarTab() {
 
       {/* Services Grid */}
       <ScrollArea className="flex-1">
-        <div className="p-4">
-          <div className="grid grid-cols-2 gap-3">
-            {filteredServices.map((service, index) => (
+        <div className="p-3">
+          <div className="grid grid-cols-2 gap-2">
+            {filteredServices.map((service) => (
               <ServiceCard 
                 key={service.id} 
                 service={service} 
@@ -334,12 +328,15 @@ export function RadarTab() {
 
           {filteredServices.length === 0 && (
             <div className="text-center py-12">
-              <MapPin className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground font-arabic">
+              <MapPin className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
+              <p className="text-sm text-muted-foreground font-arabic">
                 ما في خدمات في الفئة دي حالياً
               </p>
             </div>
           )}
+          
+          {/* Bottom padding */}
+          <div className="h-4" />
         </div>
       </ScrollArea>
 
