@@ -83,16 +83,16 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
     >
       {/* Header */}
       <div className="p-2.5 border-b border-[#2D5A27]/10">
-        <div className="flex flex-row items-start gap-2">
+        <div className="flex flex-row-reverse items-start gap-2">
           <div className={cn(
             'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
             getCategoryColor(service.category)
           )}>
             <Icon className="h-4 w-4" />
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 text-right">
             <h3 className="font-bold font-arabic text-xs truncate">{service.nameAr}</h3>
-            <div className="flex flex-row items-center gap-1 mt-0.5">
+            <div className="flex flex-row-reverse items-center gap-1 mt-0.5 justify-end">
               <MapPin className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
               <span className="text-[10px] text-muted-foreground font-arabic truncate">
                 {service.addressAr}
@@ -102,7 +102,7 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
         </div>
 
         {/* Status badge */}
-        <div className="flex flex-row items-center justify-between mt-2">
+        <div className="flex flex-row-reverse items-center justify-between mt-2">
           <Badge 
             variant="outline" 
             className={cn(
@@ -113,9 +113,9 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
             )}
           >
             {service.isOpen ? (
-              <span className="flex flex-row items-center gap-0.5"><CheckCircle2 className="h-2.5 w-2.5" /> مفتوح</span>
+              <span className="flex flex-row-reverse items-center gap-0.5"><CheckCircle2 className="h-2.5 w-2.5" /> مفتوح</span>
             ) : (
-              <span className="flex flex-row items-center gap-0.5"><XCircle className="h-2.5 w-2.5" /> مغلق</span>
+              <span className="flex flex-row-reverse items-center gap-0.5"><XCircle className="h-2.5 w-2.5" /> مغلق</span>
             )}
           </Badge>
           {service.distance && (
@@ -129,9 +129,9 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
       {/* Latest status */}
       {latestStatus && (
         <div className="p-2 bg-[#F5F5DC]/50 dark:bg-secondary/30">
-          <div className="flex flex-row items-start gap-1.5">
+          <div className="flex flex-row-reverse items-start gap-1.5">
             <MessageSquare className="h-3 w-3 text-[#2D5A27] mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-right">
               <p className="text-[10px] font-arabic leading-relaxed text-foreground line-clamp-2">
                 {latestStatus.messageAr}
               </p>
