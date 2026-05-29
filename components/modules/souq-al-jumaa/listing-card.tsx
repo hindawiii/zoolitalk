@@ -101,9 +101,9 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
       </div>
 
       {/* Content */}
-      <CardContent className="p-3 space-y-2">
+      <CardContent className={cn('p-3 space-y-2', isRTL && 'text-right')}>
         {/* Price */}
-        <div className="flex items-center justify-between">
+        <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
           <span className="font-bold text-lg text-primary">
             {formatPrice(listing.price)}
           </span>
@@ -122,7 +122,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
 
         {/* Location */}
         {listing.location && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className={cn('flex items-center gap-1 text-xs text-muted-foreground', isRTL && 'flex-row-reverse')}>
             <MapPin className="h-3 w-3" />
             <span className={cn(isRTL && 'font-arabic')}>
               {isRTL ? listing.locationAr || listing.location : listing.location}
@@ -131,7 +131,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
         )}
 
         {/* Seller */}
-        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+        <div className={cn('flex items-center gap-2 pt-2 border-t border-border/50', isRTL && 'flex-row-reverse')}>
           <Avatar className="h-6 w-6">
             <AvatarImage src={listing.sellerAvatar} alt={listing.sellerName} />
             <AvatarFallback className="text-xs bg-primary/10">
