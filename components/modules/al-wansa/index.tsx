@@ -26,11 +26,12 @@ interface Tab {
 }
 
 // RTL order: Messages (right) -> Islamic -> Games -> Archive (left)
+// Array is reversed so flex-row-reverse displays correctly
 const tabs: Tab[] = [
-  { id: 'messages', labelAr: 'الرسائل', labelEn: 'Messages', icon: MessageCircle },
-  { id: 'islamic', labelAr: 'إسلاميات', labelEn: 'Islamic', icon: Moon },
-  { id: 'games', labelAr: 'الألعاب', labelEn: 'Games', icon: Gamepad2 },
   { id: 'archive', labelAr: 'الأرشيف', labelEn: 'Archive', icon: Archive },
+  { id: 'games', labelAr: 'الألعاب', labelEn: 'Games', icon: Gamepad2 },
+  { id: 'islamic', labelAr: 'إسلاميات', labelEn: 'Islamic', icon: Moon },
+  { id: 'messages', labelAr: 'الرسائل', labelEn: 'Messages', icon: MessageCircle },
 ]
 
 export default function AlWansa() {
