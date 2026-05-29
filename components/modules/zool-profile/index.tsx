@@ -676,8 +676,8 @@ export default function ZoolProfile() {
                 </h3>
                 <Star className="h-4 w-4 text-[#2D5A27]" />
               </div>
-              <ScrollArea className="w-full">
-                <div className="flex gap-2 sm:gap-3 pb-2">
+              <ScrollArea className="w-full" dir="ltr">
+                <div className="flex gap-2 sm:gap-3 pb-3 px-1" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
                   {displayUser.featuredPosts.map((post) => (
                     <FeaturedPostCard
                       key={post.id}
@@ -692,7 +692,7 @@ export default function ZoolProfile() {
                     />
                   ))}
                 </div>
-                <ScrollBar orientation="horizontal" />
+                <ScrollBar orientation="horizontal" className="h-2.5 hover:h-3 transition-all" />
               </ScrollArea>
             </motion.div>
           )}
