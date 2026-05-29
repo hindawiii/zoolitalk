@@ -85,7 +85,7 @@ export default function SouqAlJumaa() {
   const selectedListing = listings.find((l) => l.id === selectedListingId)
 
   return (
-    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col h-full w-full max-w-full overflow-x-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Detail View */}
       <AnimatePresence>
         {selectedListing && (
@@ -106,7 +106,7 @@ export default function SouqAlJumaa() {
 
       {/* Header */}
       <div className="p-4 space-y-3 border-b bg-card/50">
-        <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+        <div className="flex items-center justify-between">
           <h2 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>
             {t('souq.title')}
           </h2>
@@ -139,7 +139,7 @@ export default function SouqAlJumaa() {
         </div>
 
         {/* Quick filters */}
-        <div className={cn('flex gap-2', isRTL && 'flex-row-reverse')}>
+        <div className="flex gap-2">
           <Button
             variant={showBarterOnly ? 'default' : 'outline'}
             size="sm"
@@ -163,7 +163,7 @@ export default function SouqAlJumaa() {
 
       {/* Categories */}
       <div className="px-4 py-3 border-b overflow-x-auto overflow-y-hidden w-full max-w-full scrollbar-hide">
-        <div className={cn('flex gap-2 w-max', isRTL && 'flex-row-reverse')}>
+        <div className="flex gap-2 w-max">
           {/* All category */}
           <button
             onClick={() => setActiveCategory('all')}
@@ -208,7 +208,7 @@ export default function SouqAlJumaa() {
 
       {/* Listings Grid */}
       <ScrollArea className="flex-1">
-        <div className="p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="p-4">
           {filteredListings.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Package className="h-12 w-12 mb-4 opacity-50" />

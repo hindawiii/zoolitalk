@@ -52,6 +52,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
     <Card 
       className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50"
       onClick={onClick}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Image */}
       <div className="relative aspect-square bg-secondary">
@@ -101,9 +102,9 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
       </div>
 
       {/* Content */}
-      <CardContent className={cn('p-3 space-y-2', isRTL && 'text-right')}>
+      <CardContent className="p-3 space-y-2">
         {/* Price */}
-        <div className={cn('flex items-center justify-between', isRTL && 'flex-row-reverse')}>
+        <div className="flex items-center justify-between">
           <span className="font-bold text-lg text-primary">
             {formatPrice(listing.price)}
           </span>
@@ -122,7 +123,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
 
         {/* Location */}
         {listing.location && (
-          <div className={cn('flex items-center gap-1 text-xs text-muted-foreground', isRTL && 'flex-row-reverse')}>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
             <span className={cn(isRTL && 'font-arabic')}>
               {isRTL ? listing.locationAr || listing.location : listing.location}
@@ -131,7 +132,7 @@ export function ListingCard({ listing, onClick }: ListingCardProps) {
         )}
 
         {/* Seller */}
-        <div className={cn('flex items-center gap-2 pt-2 border-t border-border/50', isRTL && 'flex-row-reverse')}>
+        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
           <Avatar className="h-6 w-6">
             <AvatarImage src={listing.sellerAvatar} alt={listing.sellerName} />
             <AvatarFallback className="text-xs bg-primary/10">
