@@ -36,6 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
 import { OpportunitiesSlider } from './opportunities-slider'
+import { NewsSlider } from './news-slider'
 import { OpportunityDetailSheet } from './opportunity-detail-sheet'
 import type { Opportunity } from '@/lib/types/opportunities'
 
@@ -475,7 +476,19 @@ export default function ZooliNews() {
       <ScrollArea className="flex-1 w-full">
         <div className="py-4 space-y-4 w-full max-w-full">
           {/* Al-Foras Opportunities Slider */}
-          <OpportunitiesSlider onOpportunityClick={handleOpportunityClick} />
+          <OpportunitiesSlider 
+            onOpportunityClick={handleOpportunityClick}
+            onViewAll={() => setMainTab('opportunities')}
+          />
+          
+          {/* News Slider - Smart Cards for Mobile */}
+          <NewsSlider
+            news={filteredNews}
+            categoryConfig={categoryConfig}
+            onArticleClick={setSelectedArticle}
+            onViewAll={() => setMainTab('news')}
+            formatTimeAgo={formatTimeAgo}
+          />
           
           <div className="px-3 sm:px-4 space-y-3 sm:space-y-4">
           {/* Quick Currency Calculator */}
@@ -570,37 +583,38 @@ export default function ZooliNews() {
 
           {/* Sudanese Currency Rates */}
           <Card className="overflow-hidden w-full">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 px-3 sm:px-6">
               <div className="flex flex-col gap-1">
-                <CardTitle className={cn('text-sm flex items-center gap-2', isRTL && 'font-arabic')}>
-                  <Banknote className="h-4 w-4 text-accent" />
+                <CardTitle className={cn('text-xs sm:text-sm flex items-center gap-2', isRTL && 'font-arabic')}>
+                  <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
                   {isRTL ? 'أسعار العملات مقابل الجنيه' : 'Currency Rates (SDG)'}
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   {isRTL ? 'المصدر: بنكك / السوق الموازي' : 'Source: Bankak / Parallel Market'}
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-4 overflow-hidden px-2 sm:px-4">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2 w-full" dir="ltr">
+            <CardContent className="pb-3 sm:pb-4 overflow-hidden px-2 sm:px-4">
+              {/* Horizontal scroll on mobile, grid on desktop */}
+              <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 overflow-x-auto scrollbar-hide pb-1 sm:pb-0" dir="ltr">
                 {mockCurrencyRates.slice(0, 6).map((currency) => (
                   <div 
                     key={currency.code}
-                    className="p-1.5 sm:p-2.5 rounded-lg bg-secondary/50 w-full"
+                    className="flex-shrink-0 w-[100px] sm:w-auto p-2 sm:p-2.5 rounded-lg bg-secondary/50"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="flex items-center gap-0.5 sm:gap-1">
-                        <span className="text-xs sm:text-base">{currency.flag}</span>
-                        <span className="font-semibold text-[10px] sm:text-sm">{currency.code}</span>
+                        <span className="text-sm sm:text-base">{currency.flag}</span>
+                        <span className="font-semibold text-[11px] sm:text-sm">{currency.code}</span>
                       </span>
                       <span className={cn(
-                        'text-[8px] sm:text-[10px] font-medium',
+                        'text-[9px] sm:text-[10px] font-medium',
                         currency.change24h >= 0 ? 'text-green-500' : 'text-red-500'
                       )}>
                         {currency.change24h >= 0 ? '+' : ''}{currency.change24h.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="text-[9px] sm:text-[11px] text-muted-foreground space-y-0.5">
+                    <div className="text-[10px] sm:text-[11px] text-muted-foreground space-y-0.5">
                       <div className="flex justify-between">
                         <span>{isRTL ? 'شراء:' : 'Buy:'}</span>
                         <span className="font-medium text-foreground">{currency.buyRate.toFixed(0)}</span>
@@ -630,80 +644,89 @@ export default function ZooliNews() {
             </TabsList>
 
             {/* Latest News Tab */}
-            <TabsContent value="news" className="mt-0 space-y-4">
-              {filteredNews.map((article, idx) => (
-                <Card 
-                  key={article.id}
-                  className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedArticle(article)}
-                >
-                  {idx === 0 ? (
-                    // Featured article (first one)
-                    <div>
-                      <div className="relative aspect-video bg-secondary">
-                        <Image
-                          src={article.image}
-                          alt={isRTL ? article.titleAr : article.title}
-                          fill
-                          className="object-cover"
-                        />
-                        <Badge 
-                          className="absolute top-3 start-3 bg-primary"
-                        >
-                          {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
-                        </Badge>
-                      </div>
-                      <CardContent className="p-4 space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
-                        <h3 className={cn(
-                          'font-semibold text-lg line-clamp-2',
-                          isRTL && 'font-arabic'
-                        )}>
-                          {isRTL ? article.titleAr : article.title}
-                        </h3>
-                        <p className={cn(
-                          'text-sm text-muted-foreground line-clamp-2',
-                          isRTL && 'font-arabic'
-                        )}>
-                          {isRTL ? article.summaryAr : article.summary}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
-                          <span>{formatTimeAgo(article.publishedAt)}</span>
-                        </div>
-                      </CardContent>
-                    </div>
-                  ) : (
-                    // Regular article
-                    <CardContent className="p-3 flex gap-3" dir={isRTL ? 'rtl' : 'ltr'}>
-                      <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-secondary shrink-0">
-                        <Image
-                          src={article.image}
-                          alt={isRTL ? article.titleAr : article.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                          <Badge variant="secondary" className="text-xs mb-1">
+            <TabsContent value="news" className="mt-0">
+              {/* News Grid - Tiles Layout for Mobile */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+                {filteredNews.map((article, idx) => (
+                  <Card 
+                    key={article.id}
+                    className={cn(
+                      'overflow-hidden cursor-pointer hover:shadow-md transition-shadow',
+                      idx === 0 && 'col-span-2 sm:col-span-2 md:col-span-2'
+                    )}
+                    onClick={() => setSelectedArticle(article)}
+                  >
+                    {idx === 0 ? (
+                      // Featured article (first one) - larger tile
+                      <div>
+                        <div className="relative aspect-[16/9] sm:aspect-video bg-secondary">
+                          <Image
+                            src={article.image}
+                            alt={isRTL ? article.titleAr : article.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <Badge 
+                            className="absolute top-2 start-2 sm:top-3 sm:start-3 bg-primary text-[10px] sm:text-xs"
+                          >
                             {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
                           </Badge>
+                        </div>
+                        <CardContent className="p-2.5 sm:p-4 space-y-1.5 sm:space-y-2" dir={isRTL ? 'rtl' : 'ltr'}>
                           <h3 className={cn(
-                            'font-medium text-sm line-clamp-2',
+                            'font-semibold text-sm sm:text-lg line-clamp-2',
                             isRTL && 'font-arabic'
                           )}>
                             {isRTL ? article.titleAr : article.title}
                           </h3>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
-                          <span>{formatTimeAgo(article.publishedAt)}</span>
-                        </div>
+                          <p className={cn(
+                            'text-xs sm:text-sm text-muted-foreground line-clamp-2 hidden sm:block',
+                            isRTL && 'font-arabic'
+                          )}>
+                            {isRTL ? article.summaryAr : article.summary}
+                          </p>
+                          <div className="flex items-center justify-between text-[10px] sm:text-xs text-muted-foreground">
+                            <span className={cn(isRTL && 'font-arabic')}>{isRTL ? article.sourceAr : article.source}</span>
+                            <span>{formatTimeAgo(article.publishedAt)}</span>
+                          </div>
+                        </CardContent>
                       </div>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
+                    ) : (
+                      // Regular article - small tile
+                      <div>
+                        <div className="relative aspect-[4/3] bg-secondary">
+                          <Image
+                            src={article.image}
+                            alt={isRTL ? article.titleAr : article.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <Badge 
+                            variant="secondary" 
+                            className="absolute top-1.5 start-1.5 text-[9px] sm:text-[10px] px-1.5 py-0.5"
+                          >
+                            {isRTL ? categoryConfig[article.category].labelAr : categoryConfig[article.category].labelEn}
+                          </Badge>
+                        </div>
+                        <CardContent className="p-2 sm:p-3" dir={isRTL ? 'rtl' : 'ltr'}>
+                          <h3 className={cn(
+                            'font-medium text-[11px] sm:text-sm line-clamp-2 mb-1.5 sm:mb-2',
+                            isRTL && 'font-arabic'
+                          )}>
+                            {isRTL ? article.titleAr : article.title}
+                          </h3>
+                          <div className="flex items-center justify-between text-[9px] sm:text-xs text-muted-foreground">
+                            <span className={cn('truncate max-w-[50%]', isRTL && 'font-arabic')}>
+                              {isRTL ? article.sourceAr : article.source}
+                            </span>
+                            <span className="flex-shrink-0">{formatTimeAgo(article.publishedAt)}</span>
+                          </div>
+                        </CardContent>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
             </TabsContent>
 
             {/* Opportunities Tab */}
