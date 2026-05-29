@@ -219,7 +219,8 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
           className={cn(
             'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
             'hover:bg-secondary/50 active:bg-secondary',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            isRTL && 'flex-row-reverse'
           )}
         >
           {/* Avatar */}
@@ -247,9 +248,9 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0 text-start">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
+          <div className={cn('flex-1 min-w-0', isRTL ? 'text-right' : 'text-start')}>
+            <div className={cn('flex items-center justify-between gap-2', isRTL && 'flex-row-reverse')}>
+              <div className={cn('flex items-center gap-1.5', isRTL && 'flex-row-reverse')}>
                 {chat.isPinned && <Pin className="h-3 w-3 text-primary" />}
                 {chat.isMuted && <BellOff className="h-3 w-3 text-muted-foreground" />}
                 <span className={cn('font-semibold truncate', isRTL && 'font-arabic')}>
@@ -260,7 +261,7 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
                 {formatTime(chat.lastMessageTime)}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-2 mt-0.5">
+            <div className={cn('flex items-center justify-between gap-2 mt-0.5', isRTL && 'flex-row-reverse')}>
               <p className={cn(
                 'text-sm text-muted-foreground truncate',
                 isRTL && 'font-arabic'

@@ -275,17 +275,17 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   if (!chat) return null
 
   return (
-    <div className="flex flex-col h-full bg-background w-full max-w-full overflow-hidden relative">
+    <div className="flex flex-col h-full max-h-full bg-background w-full max-w-full overflow-hidden relative">
       {/* Background Pattern - Click to change wallpaper */}
       <div 
-        className="absolute inset-0 cursor-pointer" 
+        className="absolute inset-0 cursor-pointer pointer-events-none" 
         onClick={() => setShowWallpaperPicker(true)}
         aria-label={isRTL ? 'تغيير الخلفية' : 'Change wallpaper'}
       >
         <ChatBackgroundPattern />
       </div>
       
-      {/* Header */}
+      {/* Header - Fixed at top */}
       <header className="flex items-center gap-3 px-2 py-2 bg-card/95 backdrop-blur-sm border-b relative z-10">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <BackIcon className="h-5 w-5" />
@@ -389,9 +389,10 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         </div>
       </header>
 
-      {/* Messages */}
-      <ScrollArea ref={scrollRef} className="flex-1 p-4 pb-24 relative z-0">
-        <div className="space-y-4">
+      {/* Messages - Scrollable area with padding for fixed input */}
+      <div className="flex-1 overflow-hidden relative z-0 min-h-0">
+        <ScrollArea ref={scrollRef} className="h-full p-4">
+          <div className="space-y-4">
           {chatMessages.map((message, index) => {
             const isSent = message.senderId === currentUser?.id
             const showAvatar = !isSent && (
@@ -427,17 +428,18 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               />
             )
           })}
-        </div>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      </div>
 
-      {/* Reply preview */}
+      {/* Reply preview - positioned above input */}
       <AnimatePresence>
         {replyingTo && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t bg-secondary/30 relative z-10"
+            className="overflow-hidden border-t bg-secondary/30 relative z-10 flex-shrink-0"
           >
             <div className="flex items-center gap-2 px-4 py-2">
               <Reply className="h-4 w-4 text-primary" />
@@ -453,9 +455,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         )}
       </AnimatePresence>
 
-      {/* Sticky Input Area */}
+      {/* Input Area - Fixed in flex layout at bottom */}
       <div 
-        className="sticky bottom-0 left-0 right-0 p-3 border-t bg-card/95 backdrop-blur-sm z-20"
+        className="p-3 border-t bg-card/95 backdrop-blur-sm z-20 flex-shrink-0 w-full"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {isRecording ? (
