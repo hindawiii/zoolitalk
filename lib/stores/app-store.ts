@@ -111,6 +111,7 @@ export const useAppStore = create<AppState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         language: state.language,
+        activeTab: state.activeTab,
         dataSaverEnabled: state.dataSaverEnabled,
         showOnlineStatus: state.showOnlineStatus,
       }),
