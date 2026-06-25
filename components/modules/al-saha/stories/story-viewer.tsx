@@ -51,10 +51,12 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
   const startRef = React.useRef<number>(0)
   const elapsedRef = React.useRef<number>(0)
 
-  // mark current owner viewed
+  // mark current owner viewed (depend only on the owner id so updating the
+  // store's stories array doesn't re-fire this effect in a loop)
+  const ownerId = group?.ownerId
   React.useEffect(() => {
-    if (group) markGroupViewed(group.ownerId)
-  }, [group, markGroupViewed])
+    if (ownerId) markGroupViewed(ownerId)
+  }, [ownerId, markGroupViewed])
 
   const goToNextStory = React.useCallback(() => {
     if (!group) return
