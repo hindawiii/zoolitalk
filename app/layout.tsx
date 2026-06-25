@@ -6,6 +6,7 @@ import { LanguageProvider } from '@/components/providers/language-provider'
 import { GiftOverlay } from '@/components/gift-overlay'
 import { GlobalAudioPlayer } from '@/components/shared/global-audio-player'
 import { ReportSheet } from '@/components/shared/report-button'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const tajawal = Tajawal({
@@ -80,6 +81,7 @@ export default function RootLayout({
             <GiftOverlay />
             <GlobalAudioPlayer />
             <ReportSheet />
+            <Toaster position="top-center" richColors />
           </LanguageProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
