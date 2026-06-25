@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ArrowLeft,
   ArrowRight,
+  Archive,
   User as UserIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -59,6 +60,7 @@ import { useGender } from '@/hooks/use-gender'
 import { SOCIAL_STATUS_LABELS, PROFESSIONAL_STATUS_LABELS, RANK_LABELS } from '@/lib/gender-utils'
 import { useImageCrop } from '@/components/shared/use-image-crop'
 import { ImageViewer, type ImageViewerData } from '@/components/shared/image-viewer'
+import { StoryHighlights, StoryArchiveTab } from './story-section'
 import { cn } from '@/lib/utils'
 
 // Professional Status Icons (labels come from gender-utils)
@@ -717,6 +719,9 @@ export default function ZoolProfile() {
             </div>
           </div>
 
+          {/* Story Highlights row */}
+          <StoryHighlights isOwnProfile={isOwnProfile} />
+
           {/* Al-Saha Museum (Highlights) Section */}
           {highlightsLoaded && displayUser?.featuredPosts && displayUser.featuredPosts.length > 0 && (
             <motion.div
@@ -789,6 +794,12 @@ export default function ZoolProfile() {
                 <Heart className="h-5 w-5" />
               </TabsTrigger>
               <TabsTrigger 
+                value="archive" 
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[#2D5A27] data-[state=active]:bg-transparent"
+              >
+                <Archive className="h-5 w-5" />
+              </TabsTrigger>
+              <TabsTrigger 
                 value="saved" 
                 className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[#2D5A27] data-[state=active]:bg-transparent"
               >
@@ -839,6 +850,10 @@ export default function ZoolProfile() {
                 title={isRTL ? 'لا توجد إعجابات' : 'No Likes Yet'}
                 description={isRTL ? 'المنشورات التي أعجبتك ستظهر هنا' : 'Posts you like will appear here'}
               />
+            </TabsContent>
+
+            <TabsContent value="archive" className="mt-0 w-full">
+              <StoryArchiveTab isOwnProfile={isOwnProfile} />
             </TabsContent>
 
             <TabsContent value="saved" className="mt-0 w-full">
