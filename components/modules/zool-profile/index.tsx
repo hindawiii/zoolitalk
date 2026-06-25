@@ -31,7 +31,6 @@ import {
   ChevronDown,
   ArrowLeft,
   ArrowRight,
-  Loader2,
   User as UserIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -58,7 +57,8 @@ import { useChatStore } from '@/lib/stores/chat-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
 import { SOCIAL_STATUS_LABELS, PROFESSIONAL_STATUS_LABELS, RANK_LABELS } from '@/lib/gender-utils'
-import { compressImage } from '@/lib/image-compress'
+import { useImageCrop } from '@/components/shared/use-image-crop'
+import { ImageViewer, type ImageViewerData } from '@/components/shared/image-viewer'
 import { cn } from '@/lib/utils'
 
 // Professional Status Icons (labels come from gender-utils)
@@ -261,7 +261,7 @@ export default function ZoolProfile() {
   const { chats, setActiveChatId } = useChatStore()
   const { socialStatus, professionalStatus, rank } = useGender()
   const [activeTab, setActiveTab] = React.useState('posts')
-  const [selectedImage, setSelectedImage] = React.useState<GalleryItem | null>(null)
+  const [selectedImage, setSelectedImage] = React.useState<ImageViewerData | null>(null)
   const [giftsLoaded, setGiftsLoaded] = React.useState(false)
   const [highlightsLoaded, setHighlightsLoaded] = React.useState(false)
   
@@ -321,35 +321,13 @@ export default function ZoolProfile() {
     }
   }, [])
 
-  // --- Profile / Cover photo upload ---
-  const avatarInputRef = React.useRef<HTMLInputElement>(null)
-  const coverInputRef = React.useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = React.useState<'avatar' | 'cover' | null>(null)
+  // --- Profile / Cover photo upload (with crop editor) ---
+  const { pickImage, cropExisting, cropPortal } = useImageCrop()
 
-  const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: 'avatar' | 'coverPhoto',
-  ) => {
-    const file = e.target.files?.[0]
-    // Reset the input so selecting the same file again still fires onChange
-    e.target.value = ''
-    if (!file) return
-
-    setUploading(field === 'avatar' ? 'avatar' : 'cover')
-    try {
-      const dataUrl = await compressImage(file, {
-        maxWidth: field === 'avatar' ? 400 : 1280,
-        maxHeight: field === 'avatar' ? 400 : 640,
-        quality: 0.8,
-      })
-      // Persisted to localStorage via the user store, so it syncs across the app
-      updateProfile({ [field]: dataUrl })
-    } catch (err) {
-      console.error('[v0] Image upload failed:', err)
-    } finally {
-      setUploading(null)
-    }
-  }
+  const handleChangeAvatar = () =>
+    pickImage('avatar', (dataUrl) => updateProfile({ avatar: dataUrl }))
+  const handleChangeCover = () =>
+    pickImage('cover', (dataUrl) => updateProfile({ coverPhoto: dataUrl }))
 
   // Treat the seeded "/.../default.jpg" placeholders as "no image" so the
   // gradient / icon fallback shows instead of a broken image.
@@ -376,150 +354,138 @@ export default function ZoolProfile() {
   const userRank = displayUser?.rank || 'newbie'
   const rankInfo = rankConfig[userRank]
 
-  // Lightbox for images
-  if (selectedImage) {
-    return (
-      <div 
-        className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-        onClick={() => setSelectedImage(null)}
-      >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-4 right-4 text-white hover:bg-white/20"
-          onClick={() => setSelectedImage(null)}
-        >
-          <MoreHorizontal className="h-6 w-6 rotate-90" />
-        </Button>
-        <Image
-          src={selectedImage.url}
-          alt="Gallery image"
-          width={600}
-          height={600}
-          className="max-w-full max-h-full object-contain"
-        />
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 text-white">
-          <Button variant="ghost" className="text-white hover:bg-white/20 gap-2">
-            <Heart className="h-5 w-5" />
-            {formatNumber(selectedImage.likes)}
-          </Button>
-          <Button variant="ghost" className="text-white hover:bg-white/20">
-            <Share2 className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-background w-full overflow-hidden" dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
-          {/* Cover Photo */}
-          <div className="relative h-32 sm:h-40 w-full bg-gradient-to-br from-[#2D5A27] via-[#2D5A27]/80 to-emerald-700">
+          {/* Cover Photo - Facebook-style banner with blurred backdrop */}
+          <div className="relative w-full overflow-hidden">
+            {/* Blurred backdrop that bleeds the cover into the page */}
             {coverSrc && (
-              <Image
-                src={coverSrc}
-                alt="Cover"
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            )}
-            
-            {/* Back Button (when viewing other user) */}
-            {!isOwnProfile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 start-3"
-                onClick={handleGoBack}
-              >
-                <BackIcon className="h-5 w-5 text-white" />
-              </Button>
-            )}
-            
-            {/* Settings Button (own profile only) */}
-            {isOwnProfile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 end-3"
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings className="h-5 w-5 text-white" />
-              </Button>
+              <div className="absolute inset-0">
+                <Image
+                  src={coverSrc}
+                  alt=""
+                  fill
+                  unoptimized
+                  className="object-cover scale-125 blur-2xl opacity-40"
+                />
+              </div>
             )}
 
-            {/* Edit Cover Button (own profile only) */}
-            {isOwnProfile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => coverInputRef.current?.click()}
-                disabled={uploading === 'cover'}
-                className="absolute bottom-3 bg-[#2D5A27]/70 backdrop-blur-sm hover:bg-[#2D5A27] text-white gap-1.5 end-3 transition-colors"
-              >
-                {uploading === 'cover' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
-                <span className="text-xs font-arabic">{isRTL ? 'تغيير' : 'Edit'}</span>
-              </Button>
-            )}
+            {/* Main banner (16:9) */}
+            <div className="relative aspect-[16/9] max-h-56 w-full bg-gradient-to-br from-[#2D5A27] via-[#2D5A27]/80 to-emerald-700">
+              {coverSrc && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedImage({
+                      url: coverSrc,
+                      authorName: isRTL ? displayUser?.nameAr : displayUser?.name,
+                      date: isRTL ? 'صورة الخلفية' : 'Cover photo',
+                    })
+                  }
+                  className="absolute inset-0"
+                  aria-label={isRTL ? 'عرض صورة الخلفية' : 'View cover photo'}
+                >
+                  <Image src={coverSrc} alt="Cover" fill unoptimized className="object-cover" />
+                </button>
+              )}
 
-            {/* Hidden file inputs */}
-            {isOwnProfile && (
-              <>
-                <input
-                  ref={coverInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleImageUpload(e, 'coverPhoto')}
-                />
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleImageUpload(e, 'avatar')}
-                />
-              </>
-            )}
+              {/* Smooth blend into page background */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background via-background/40 to-transparent" />
+
+              {/* Back Button (when viewing other user) */}
+              {!isOwnProfile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 bg-black/30 backdrop-blur-sm hover:bg-black/50 start-3 z-10"
+                  onClick={handleGoBack}
+                >
+                  <BackIcon className="h-5 w-5 text-white" />
+                </Button>
+              )}
+
+              {/* Settings Button (own profile only) */}
+              {isOwnProfile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 bg-black/30 backdrop-blur-sm hover:bg-black/50 end-3 z-10"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  <Settings className="h-5 w-5 text-white" />
+                </Button>
+              )}
+
+              {/* Change Photo dropdown (own profile only) */}
+              {isOwnProfile && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute bottom-6 bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white gap-1.5 end-3 z-10"
+                    >
+                      <Camera className="h-4 w-4" />
+                      <span className="text-xs font-arabic">{isRTL ? 'تغيير' : 'Edit'}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="font-arabic">
+                    <DropdownMenuItem onClick={handleChangeAvatar}>
+                      <UserIcon className="h-4 w-4 me-2" />
+                      {isRTL ? 'تغيير الصورة الشخصية' : 'Change profile picture'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleChangeCover}>
+                      <ImagePlus className="h-4 w-4 me-2" />
+                      {isRTL ? 'تغيير صورة الخلفية' : 'Change cover photo'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
 
           {/* Profile Header */}
           <div className="relative px-2 sm:px-4 pb-4 w-full">
             {/* Animated Avatar with Rank Frame */}
-            <div className="relative -mt-14 sm:-mt-16 mb-3 sm:mb-4 flex justify-center w-full">
+            <div className="relative -mt-16 sm:-mt-20 mb-3 sm:mb-4 flex justify-center w-full">
               <div className="relative">
                 <AnimatedAvatarFrame rank={userRank}>
-                  <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
-                    <AvatarImage src={avatarSrc} alt={displayUser?.name} />
-                    <AvatarFallback className="text-2xl sm:text-3xl bg-[#2D5A27] text-white font-arabic">
-                      {displayUser?.nickname?.[0] || displayUser?.nameAr?.[0] || (
-                        <UserIcon className="h-10 w-10 sm:h-12 sm:w-12" />
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      avatarSrc &&
+                      setSelectedImage({
+                        url: avatarSrc,
+                        authorName: isRTL ? displayUser?.nameAr : displayUser?.name,
+                        date: isRTL ? 'الصورة الشخصية' : 'Profile picture',
+                      })
+                    }
+                    aria-label={isRTL ? 'عرض الصورة الشخصية' : 'View profile picture'}
+                    className="block rounded-full"
+                  >
+                    <Avatar className="h-28 w-28 sm:h-32 sm:w-32 border-4 border-background shadow-xl">
+                      <AvatarImage src={avatarSrc} alt={displayUser?.name} />
+                      <AvatarFallback className="text-3xl sm:text-4xl bg-[#2D5A27] text-white font-arabic">
+                        {displayUser?.nickname?.[0] || displayUser?.nameAr?.[0] || (
+                          <UserIcon className="h-12 w-12 sm:h-14 sm:w-14" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
                 </AnimatedAvatarFrame>
 
                 {/* Change Avatar Button (own profile only) */}
                 {isOwnProfile && (
                   <button
                     type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    disabled={uploading === 'avatar'}
+                    onClick={handleChangeAvatar}
                     aria-label={isRTL ? 'تغيير الصورة الشخصية' : 'Change profile picture'}
-                    className="absolute bottom-0 end-0 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-[#2D5A27] text-white shadow-md transition-colors hover:bg-[#3a7332] disabled:opacity-70"
+                    className="absolute bottom-1 end-1 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-[#2D5A27] text-white shadow-md transition-colors hover:bg-[#3a7332]"
                   >
-                    {uploading === 'avatar' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4" />
-                    )}
+                    <Camera className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -771,10 +737,8 @@ export default function ZoolProfile() {
                       key={post.id}
                       post={post}
                       onClick={() => setSelectedImage({
-                        id: post.id,
-                        type: 'image',
                         url: post.thumbnail,
-                        thumbnail: post.thumbnail,
+                        authorName: isRTL ? displayUser?.nameAr : displayUser?.name,
                         likes: post.likes,
                       })}
                     />
@@ -839,7 +803,11 @@ export default function ZoolProfile() {
                     <button
                       key={item.id}
                       className="relative aspect-square bg-secondary overflow-hidden hover:opacity-90 transition-opacity"
-                      onClick={() => setSelectedImage(item)}
+                      onClick={() => setSelectedImage({
+                        url: item.url,
+                        authorName: isRTL ? displayUser?.nameAr : displayUser?.name,
+                        likes: item.likes,
+                      })}
                     >
                       <Image
                         src={item.thumbnail}
@@ -882,6 +850,17 @@ export default function ZoolProfile() {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Full-screen image viewer */}
+        <ImageViewer
+          image={selectedImage}
+          onClose={() => setSelectedImage(null)}
+          onUseAsAvatar={isOwnProfile ? (url) => { updateProfile({ avatar: url }); setSelectedImage(null) } : undefined}
+          onUseAsCover={isOwnProfile ? (url) => { updateProfile({ coverPhoto: url }); setSelectedImage(null) } : undefined}
+        />
+
+        {/* Crop editor portal (shared) */}
+        {cropPortal}
       </div>
     </TooltipProvider>
   )
