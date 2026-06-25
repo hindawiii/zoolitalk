@@ -2,12 +2,13 @@
 
 import * as React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { MessageCircle, Moon, Gamepad2, Archive } from 'lucide-react'
+import { MessageCircle, Moon, Gamepad2, Archive, CalendarHeart } from 'lucide-react'
 import { ChatList } from './chat-list'
 import { ChatView } from './chat-view'
 import { ChatThemeProvider } from './chat-theme-provider'
 import { GamesMenu } from './games-menu'
 import { OccasionsHub } from './occasions-hub'
+import { OccasionsTab } from './occasions-tab'
 import { ReligiousAssistant } from './religious-assistant'
 import { ContactManager } from './contact-manager'
 import { DocumentScanner } from './document-scanner'
@@ -16,7 +17,7 @@ import { useAppStore } from '@/lib/stores/app-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
 
-type TabId = 'messages' | 'islamic' | 'games' | 'archive'
+type TabId = 'messages' | 'islamic' | 'occasions' | 'games' | 'archive'
 
 interface Tab {
   id: TabId
@@ -30,6 +31,7 @@ interface Tab {
 const tabs: Tab[] = [
   { id: 'archive', labelAr: 'الأرشيف', labelEn: 'Archive', icon: Archive },
   { id: 'games', labelAr: 'الألعاب', labelEn: 'Games', icon: Gamepad2 },
+  { id: 'occasions', labelAr: 'المناسبات', labelEn: 'Occasions', icon: CalendarHeart },
   { id: 'islamic', labelAr: 'إسلاميات', labelEn: 'Islamic', icon: Moon },
   { id: 'messages', labelAr: 'الرسائل', labelEn: 'Messages', icon: MessageCircle },
 ]
@@ -167,6 +169,20 @@ export default function AlWansa() {
                     className="h-full w-full max-w-full"
                   >
                     <IslamicContent />
+                  </motion.div>
+                )}
+
+                {/* Occasions Tab */}
+                {activeTab === 'occasions' && (
+                  <motion.div
+                    key="occasions"
+                    initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: isRTL ? -20 : 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="h-full w-full max-w-full"
+                  >
+                    <OccasionsTab />
                   </motion.div>
                 )}
 
@@ -582,7 +598,7 @@ function GamesContent() {
               {isRTL ? 'ألعاب الونسة' : 'Al-Wansa Games'}
             </h2>
             <p className={cn('text-xs text-muted-foreground', isRTL && 'font-arabic')}>
-              {isRTL ? 'العب مع أصدقائك' : 'Play with friends'}
+              {isRTL ? '��لعب مع أصدقائك' : 'Play with friends'}
             </p>
           </div>
         </div>

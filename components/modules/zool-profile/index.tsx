@@ -31,6 +31,8 @@ import {
   ChevronDown,
   ArrowLeft,
   ArrowRight,
+  Loader2,
+  User as UserIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -56,6 +58,7 @@ import { useChatStore } from '@/lib/stores/chat-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
 import { SOCIAL_STATUS_LABELS, PROFESSIONAL_STATUS_LABELS, RANK_LABELS } from '@/lib/gender-utils'
+import { compressImage } from '@/lib/image-compress'
 import { cn } from '@/lib/utils'
 
 // Professional Status Icons (labels come from gender-utils)
@@ -318,6 +321,43 @@ export default function ZoolProfile() {
     }
   }, [])
 
+  // --- Profile / Cover photo upload ---
+  const avatarInputRef = React.useRef<HTMLInputElement>(null)
+  const coverInputRef = React.useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = React.useState<'avatar' | 'cover' | null>(null)
+
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'avatar' | 'coverPhoto',
+  ) => {
+    const file = e.target.files?.[0]
+    // Reset the input so selecting the same file again still fires onChange
+    e.target.value = ''
+    if (!file) return
+
+    setUploading(field === 'avatar' ? 'avatar' : 'cover')
+    try {
+      const dataUrl = await compressImage(file, {
+        maxWidth: field === 'avatar' ? 400 : 1280,
+        maxHeight: field === 'avatar' ? 400 : 640,
+        quality: 0.8,
+      })
+      // Persisted to localStorage via the user store, so it syncs across the app
+      updateProfile({ [field]: dataUrl })
+    } catch (err) {
+      console.error('[v0] Image upload failed:', err)
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  // Treat the seeded "/.../default.jpg" placeholders as "no image" so the
+  // gradient / icon fallback shows instead of a broken image.
+  const isRealImage = (src?: string) =>
+    !!src && !src.includes('/default.') && src.trim() !== ''
+  const coverSrc = isRealImage(displayUser?.coverPhoto) ? displayUser?.coverPhoto : undefined
+  const avatarSrc = isRealImage(displayUser?.avatar) ? displayUser?.avatar : undefined
+
   const stats = [
     { label: isRTL ? 'منشورات' : 'Posts', value: mockGallery.length },
     { label: isRTL ? 'متابعين' : 'Followers', value: displayUser?.followers ?? 1234 },
@@ -377,11 +417,12 @@ export default function ZoolProfile() {
         <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
           {/* Cover Photo */}
           <div className="relative h-32 sm:h-40 w-full bg-gradient-to-br from-[#2D5A27] via-[#2D5A27]/80 to-emerald-700">
-            {displayUser?.coverPhoto && (
+            {coverSrc && (
               <Image
-                src={displayUser.coverPhoto}
+                src={coverSrc}
                 alt="Cover"
                 fill
+                unoptimized
                 className="object-cover"
               />
             )}
@@ -415,11 +456,37 @@ export default function ZoolProfile() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute bottom-3 bg-background/30 backdrop-blur-sm hover:bg-background/50 text-white gap-1.5 end-3"
+                onClick={() => coverInputRef.current?.click()}
+                disabled={uploading === 'cover'}
+                className="absolute bottom-3 bg-[#2D5A27]/70 backdrop-blur-sm hover:bg-[#2D5A27] text-white gap-1.5 end-3 transition-colors"
               >
-                <Camera className="h-4 w-4" />
-                <span className="text-xs">{isRTL ? 'تغيير' : 'Edit'}</span>
+                {uploading === 'cover' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+                <span className="text-xs font-arabic">{isRTL ? 'تغيير' : 'Edit'}</span>
               </Button>
+            )}
+
+            {/* Hidden file inputs */}
+            {isOwnProfile && (
+              <>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, 'coverPhoto')}
+                />
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, 'avatar')}
+                />
+              </>
             )}
           </div>
 
@@ -427,14 +494,35 @@ export default function ZoolProfile() {
           <div className="relative px-2 sm:px-4 pb-4 w-full">
             {/* Animated Avatar with Rank Frame */}
             <div className="relative -mt-14 sm:-mt-16 mb-3 sm:mb-4 flex justify-center w-full">
-              <AnimatedAvatarFrame rank={userRank}>
-                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
-                  <AvatarImage src={displayUser?.avatar} alt={displayUser?.name} />
-                  <AvatarFallback className="text-2xl sm:text-3xl bg-[#2D5A27] text-white font-arabic">
-                    {displayUser?.nickname?.[0] || displayUser?.nameAr?.[0] || 'ز'}
-                  </AvatarFallback>
-                </Avatar>
-              </AnimatedAvatarFrame>
+              <div className="relative">
+                <AnimatedAvatarFrame rank={userRank}>
+                  <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-background shadow-lg">
+                    <AvatarImage src={avatarSrc} alt={displayUser?.name} />
+                    <AvatarFallback className="text-2xl sm:text-3xl bg-[#2D5A27] text-white font-arabic">
+                      {displayUser?.nickname?.[0] || displayUser?.nameAr?.[0] || (
+                        <UserIcon className="h-10 w-10 sm:h-12 sm:w-12" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                </AnimatedAvatarFrame>
+
+                {/* Change Avatar Button (own profile only) */}
+                {isOwnProfile && (
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploading === 'avatar'}
+                    aria-label={isRTL ? 'تغيير الصورة الشخصية' : 'Change profile picture'}
+                    className="absolute bottom-0 end-0 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-[#2D5A27] text-white shadow-md transition-colors hover:bg-[#3a7332] disabled:opacity-70"
+                  >
+                    {uploading === 'avatar' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </div>
               
               {/* Rank Badge */}
               <Tooltip>
