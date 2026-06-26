@@ -33,6 +33,11 @@ import {
   Pause,
   Play,
   Settings,
+  Info,
+  Ban,
+  Flag,
+  FileText,
+  Download,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -65,7 +70,7 @@ import { useGender } from '@/hooks/use-gender'
 import { ChatBackgroundPattern, useChatTheme } from './chat-theme-provider'
 import { EmojiPicker, AnimatedEmoji, FlyingEmoji } from './animated-emoji'
 import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
+import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
 
 interface ChatViewProps {
@@ -90,6 +95,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     pinChat,
     unpinChat,
     shareLocation,
+    clearChat,
+    blockChat,
+    unblockChat,
   } = useChatStore()
   const { currentUser } = useUserStore()
   const { t, language, isRTL } = useLanguage()
@@ -106,7 +114,12 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [deleteTarget, setDeleteTarget] = React.useState<{ message: Message; type: 'me' | 'everyone' } | null>(null)
   const [showWallpaperPicker, setShowWallpaperPicker] = React.useState(false)
-  
+  const [showChatInfo, setShowChatInfo] = React.useState(false)
+  const [showClearDialog, setShowClearDialog] = React.useState(false)
+  const [showBlockDialog, setShowBlockDialog] = React.useState(false)
+  const [showReportDialog, setShowReportDialog] = React.useState(false)
+  const [viewerImage, setViewerImage] = React.useState<string | null>(null)
+
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const recordingTimerRef = React.useRef<number | null>(null)
@@ -145,6 +158,14 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Date separator label ("Today" / "Yesterday" / full date)
+  const formatDateLabel = (date: Date) => {
+    const d = new Date(date)
+    if (isToday(d)) return isRTL ? 'اليوم' : 'Today'
+    if (isYesterday(d)) return isRTL ? 'أمس' : 'Yesterday'
+    return format(d, 'PPP', { locale: language === 'ar' ? ar : enUS })
   }
 
   const handleSend = () => {
@@ -330,6 +351,17 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-52" dir={isRTL ? 'rtl' : 'ltr'}>
+              {/* Chat info */}
+              <DropdownMenuItem
+                onClick={() => setShowChatInfo(true)}
+                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+              >
+                <Info className="h-4 w-4" />
+                <span className={cn(isRTL && 'font-arabic')}>
+                  {isRTL ? 'معلومات المحادثة' : 'Chat info'}
+                </span>
+              </DropdownMenuItem>
+
               {/* Pin/Unpin */}
               <DropdownMenuItem 
                 onClick={() => chat.isPinned ? unpinChat(chat.id) : pinChat(chat.id)}
@@ -379,10 +411,44 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   <DropdownMenuItem className={cn(isRTL && 'font-arabic')}>{t('chat.promote')}</DropdownMenuItem>
                 </>
               )}
-              
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem className={cn('text-destructive gap-3', isRTL && 'flex-row-reverse font-arabic')}>
-                {t('chat.delete')}
+
+              {/* Clear conversation */}
+              <DropdownMenuItem
+                onClick={() => setShowClearDialog(true)}
+                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className={cn(isRTL && 'font-arabic')}>
+                  {isRTL ? 'مسح المحادثة' : 'Clear chat'}
+                </span>
+              </DropdownMenuItem>
+
+              {/* Block / Unblock (private chats only) */}
+              {chat.type === 'private' && (
+                <DropdownMenuItem
+                  onClick={() => (chat.isBlocked ? unblockChat(chat.id) : setShowBlockDialog(true))}
+                  className={cn('gap-3', isRTL && 'flex-row-reverse')}
+                >
+                  <Ban className="h-4 w-4" />
+                  <span className={cn(isRTL && 'font-arabic')}>
+                    {chat.isBlocked
+                      ? (isRTL ? 'إلغاء حظر المستخدم' : 'Unblock user')
+                      : (isRTL ? 'حظر المستخدم' : 'Block user')}
+                  </span>
+                </DropdownMenuItem>
+              )}
+
+              {/* Report */}
+              <DropdownMenuItem
+                onClick={() => setShowReportDialog(true)}
+                className={cn('text-destructive gap-3', isRTL && 'flex-row-reverse')}
+              >
+                <Flag className="h-4 w-4" />
+                <span className={cn(isRTL && 'font-arabic')}>
+                  {isRTL ? 'الإبلاغ' : 'Report'}
+                </span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -415,17 +481,36 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               return null
             }
 
+            // Date separator when the day changes
+            const prev = chatMessages[index - 1]
+            const showDate =
+              index === 0 ||
+              !prev ||
+              !isSameDay(new Date(prev.timestamp), new Date(message.timestamp))
+
             return (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isSent={isSent}
-                showAvatar={showAvatar}
-                onLongPress={() => setSelectedMessage(message)}
-                onReply={() => setReplyingTo(message)}
-                onSwipeReply={() => setReplyingTo(message)}
-                chatMessages={chatMessages}
-              />
+              <React.Fragment key={message.id}>
+                {showDate && (
+                  <div className="flex justify-center py-1">
+                    <span className={cn(
+                      'text-[11px] text-muted-foreground bg-muted/60 backdrop-blur-sm px-3 py-1 rounded-full',
+                      isRTL && 'font-arabic'
+                    )}>
+                      {formatDateLabel(message.timestamp)}
+                    </span>
+                  </div>
+                )}
+                <MessageBubble
+                  message={message}
+                  isSent={isSent}
+                  showAvatar={showAvatar}
+                  onLongPress={() => setSelectedMessage(message)}
+                  onReply={() => setReplyingTo(message)}
+                  onSwipeReply={() => setReplyingTo(message)}
+                  onOpenImage={(url) => setViewerImage(url)}
+                  chatMessages={chatMessages}
+                />
+              </React.Fragment>
             )
           })}
           </div>
@@ -716,10 +801,11 @@ interface MessageBubbleProps {
   onLongPress: () => void
   onReply: () => void
   onSwipeReply: () => void
+  onOpenImage: (url: string) => void
   chatMessages: Message[]
 }
 
-function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply, chatMessages }: MessageBubbleProps) {
+function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
   const { language, isRTL } = useLanguage()
   const longPressTimer = React.useRef<number | null>(null)
   const controls = useAnimation()
@@ -820,11 +906,32 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
           </div>
         )}
 
-        {/* Bubble */}
+        {/* Sticker: large image, no bubble */}
+        {message.type === 'sticker' ? (
+          <div className="flex flex-col gap-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={message.stickerUrl || message.imageUrl || '/placeholder.svg'}
+              alt={isRTL ? 'ملصق' : 'Sticker'}
+              className="w-32 h-32 object-contain select-none"
+              draggable={false}
+            />
+            <div className={cn('flex items-center gap-1', isSent ? 'justify-end' : 'justify-start')}>
+              <span className="text-[10px] text-muted-foreground">
+                {formatMessageTime(message.timestamp)}
+              </span>
+              {isSent && (
+                <StatusIcon className={cn('h-3 w-3', message.status === 'read' ? 'text-blue-500' : 'text-muted-foreground')} />
+              )}
+            </div>
+          </div>
+        ) : (
+        /* Bubble */
         <div
           className={cn(
             'chat-bubble',
             isSent ? 'chat-bubble-sent' : 'chat-bubble-received',
+            (message.type === 'image' || message.type === 'video') && 'overflow-hidden p-1',
             isRTL && 'text-right'
           )}
           dir={isRTL ? 'rtl' : 'ltr'}
@@ -844,6 +951,58 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
             <VoiceMessagePlayer message={message} isSent={isSent} />
           ) : message.type === 'location' ? (
             <LocationMessage message={message} isSent={isSent} />
+          ) : message.type === 'image' ? (
+            <button
+              type="button"
+              onClick={() => onOpenImage(message.imageUrl || '')}
+              className="block w-44 max-w-full overflow-hidden rounded-lg"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={message.imageUrl || '/placeholder.svg'}
+                alt={message.content || (isRTL ? 'صورة' : 'Image')}
+                className="w-full h-auto object-cover"
+              />
+            </button>
+          ) : message.type === 'video' ? (
+            <button
+              type="button"
+              onClick={() => message.videoUrl && onOpenImage(message.videoThumbnail || message.videoUrl)}
+              className="relative block w-44 max-w-full overflow-hidden rounded-lg"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={message.videoThumbnail || '/placeholder.svg'}
+                alt={message.content || (isRTL ? 'فيديو' : 'Video')}
+                className="w-full h-auto object-cover"
+              />
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
+                  <Play className="h-5 w-5 translate-x-0.5" />
+                </span>
+              </span>
+              {message.videoDuration ? (
+                <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                  {Math.floor(message.videoDuration / 60)}:
+                  {(message.videoDuration % 60).toString().padStart(2, '0')}
+                </span>
+              ) : null}
+            </button>
+          ) : message.type === 'document' ? (
+            <div className={cn('flex items-center gap-3 min-w-[180px] py-1', isRTL && 'flex-row-reverse text-right')}>
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-current/15">
+                <FileText className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={cn('truncate text-sm font-medium', isRTL && 'font-arabic')}>
+                  {message.documentName || (isRTL ? 'مستند' : 'Document')}
+                </p>
+                <p className="text-[11px] opacity-70">
+                  {[message.documentType, message.documentSize].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <Download className="h-4 w-4 flex-shrink-0 opacity-70" />
+            </div>
           ) : (
             <>
               <p className={cn(isRTL && 'font-arabic')}>{message.content}</p>
@@ -854,10 +1013,16 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
               )}
             </>
           )}
-          
+
+          {/* Caption for media */}
+          {(message.type === 'image' || message.type === 'video') && message.content && (
+            <p className={cn('px-1 pt-1 text-sm', isRTL && 'font-arabic text-right')}>{message.content}</p>
+          )}
+
           {/* Time and status */}
           <div className={cn(
             'flex items-center gap-1 mt-1',
+            (message.type === 'image' || message.type === 'video') && 'px-1 pb-0.5',
             isSent ? 'justify-end' : 'justify-start'
           )}>
             <span className="text-[10px] opacity-70">
@@ -876,6 +1041,7 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
             )}
           </div>
         </div>
+        )}
       </motion.div>
     </div>
   )
