@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 
 import { useChatStore, type Chat } from '@/lib/stores/chat-store'
 import { useLanguage } from '@/components/providers/language-provider'
+import { NewChatSheet } from './new-chat-sheet'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
@@ -23,6 +24,7 @@ export function ChatList({ onOpenSettings, showArchived = false }: ChatListProps
   const { chats, setActiveChatId, archiveChat, unarchiveChat, muteChat, unmuteChat, pinChat, unpinChat } = useChatStore()
   const { t, language, isRTL } = useLanguage()
   const [searchQuery, setSearchQuery] = React.useState('')
+  const [newChatOpen, setNewChatOpen] = React.useState(false)
 
   // Filter and sort chats
   const filteredChats = React.useMemo(() => {
@@ -74,7 +76,12 @@ export function ChatList({ onOpenSettings, showArchived = false }: ChatListProps
               <Settings2 className="h-5 w-5" />
               <span className="sr-only">Settings</span>
             </Button>
-            <Button size="icon" variant="ghost" className="rounded-full">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setNewChatOpen(true)}
+            >
               <Plus className="h-5 w-5" />
               <span className="sr-only">{t('chat.newChat')}</span>
             </Button>
@@ -129,6 +136,9 @@ export function ChatList({ onOpenSettings, showArchived = false }: ChatListProps
           )}
         </div>
       </ScrollArea>
+
+      {/* Start a new chat / group / channel */}
+      <NewChatSheet open={newChatOpen} onClose={() => setNewChatOpen(false)} />
     </div>
   )
 }

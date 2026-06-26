@@ -8,10 +8,18 @@ export interface Message {
   senderName: string
   senderAvatar: string
   content: string
-  type: 'text' | 'voice' | 'image' | 'sticker' | 'location'
+  type: 'text' | 'voice' | 'image' | 'sticker' | 'location' | 'video' | 'document'
   voiceDuration?: number
   imageUrl?: string
   stickerUrl?: string
+  // Video
+  videoUrl?: string
+  videoThumbnail?: string
+  videoDuration?: number
+  // Document
+  documentName?: string
+  documentType?: string
+  documentSize?: string
   // Location sharing
   location?: {
     lat: number
@@ -52,6 +60,8 @@ export interface Chat {
   mutedUntil?: Date
   // Pinned
   isPinned?: boolean
+  // Blocked (private chats)
+  isBlocked?: boolean
 }
 
 export interface ChatParticipant {
@@ -66,6 +76,7 @@ interface ChatState {
   // Chats list
   chats: Chat[]
   setChats: (chats: Chat[]) => void
+  addChat: (chat: Chat) => void
   
   // Active chat
   activeChatId: string | null
@@ -90,6 +101,11 @@ interface ChatState {
   unmuteChat: (chatId: string) => void
   pinChat: (chatId: string) => void
   unpinChat: (chatId: string) => void
+
+  // Conversation management
+  clearChat: (chatId: string) => void
+  blockChat: (chatId: string) => void
+  unblockChat: (chatId: string) => void
   
   // Admin actions (for Janba/groups)
   muteUser: (chatId: string, userId: string) => void
@@ -388,6 +404,12 @@ export const useChatStore = create<ChatState>()(
     (set, get) => ({
       chats: demoChats,
       setChats: (chats) => set({ chats }),
+      addChat: (chat) =>
+        set((state) =>
+          state.chats.some((c) => c.id === chat.id)
+            ? state
+            : { chats: [chat, ...state.chats] }
+        ),
       
       activeChatId: null,
       setActiveChatId: (activeChatId) => set({ activeChatId }),
@@ -489,6 +511,28 @@ export const useChatStore = create<ChatState>()(
         set((state) => ({
           chats: state.chats.map(chat =>
             chat.id === chatId ? { ...chat, isPinned: false } : chat
+          ),
+        })),
+
+      clearChat: (chatId) =>
+        set((state) => ({
+          messages: { ...state.messages, [chatId]: [] },
+          chats: state.chats.map(chat =>
+            chat.id === chatId ? { ...chat, lastMessage: '', unreadCount: 0 } : chat
+          ),
+        })),
+
+      blockChat: (chatId) =>
+        set((state) => ({
+          chats: state.chats.map(chat =>
+            chat.id === chatId ? { ...chat, isBlocked: true } : chat
+          ),
+        })),
+
+      unblockChat: (chatId) =>
+        set((state) => ({
+          chats: state.chats.map(chat =>
+            chat.id === chatId ? { ...chat, isBlocked: false } : chat
           ),
         })),
       

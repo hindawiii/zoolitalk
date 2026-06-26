@@ -20,6 +20,7 @@ import {
 import { useFeedStore, type PostExpiry } from '@/lib/stores/feed-store'
 import { useUserStore } from '@/lib/stores/user-store'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useImageCrop } from '@/components/shared/use-image-crop'
 import { cn } from '@/lib/utils'
 
 const expiryOptions: { value: PostExpiry; label: string }[] = [
@@ -52,7 +53,8 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
   const { addPost, addPostToFirestore } = useFeedStore()
   const { currentUser, addZoolPoints } = useUserStore()
   const { t, language, isRTL } = useLanguage()
-  
+  const { pickImage, cropPortal } = useImageCrop()
+
   const [content, setContent] = React.useState('')
   const [images, setImages] = React.useState<string[]>([])
   const [expiry, setExpiry] = React.useState<PostExpiry>('permanent')
@@ -99,10 +101,13 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
     onOpenChange(false)
   }
 
-  const addDemoImage = () => {
-    if (images.length < 10) {
-      setImages([...images, `/posts/demo-${images.length + 1}.jpg`])
-    }
+  const handleAddPhoto = () => {
+    if (images.length >= 10) return
+    // Open the gallery, then route through the crop/preview editor (4:5)
+    // before the cropped result is added to the post.
+    pickImage('post', (croppedUrl) => {
+      setImages((prev) => (prev.length >= 10 ? prev : [...prev, croppedUrl]))
+    })
   }
 
   const removeImage = (index: number) => {
@@ -110,6 +115,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
   }
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl" dir="rtl">
         <SheetHeader className="flex flex-row items-center justify-between border-b pb-4">
@@ -167,13 +173,20 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
           {images.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {images.map((img, index) => (
-                <div key={index} className="relative aspect-square bg-secondary rounded-lg">
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                    {isRTL ? 'صورة' : 'Image'} {index + 1}
-                  </div>
+                <div
+                  key={index}
+                  className="relative aspect-[4/5] overflow-hidden rounded-lg bg-secondary"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img || '/placeholder.svg'}
+                    alt={`${isRTL ? 'صورة' : 'Image'} ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
                   <button
                     onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center"
+                    aria-label={isRTL ? 'حذف الصورة' : 'Remove image'}
+                    className="absolute top-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -214,7 +227,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
             <Button
               variant="outline"
               className="flex-1 gap-2"
-              onClick={addDemoImage}
+              onClick={handleAddPhoto}
               disabled={images.length >= 10}
             >
               <ImageIcon className="h-5 w-5 text-green-600" />
@@ -233,5 +246,7 @@ export function CreatePostSheet({ open, onOpenChange }: CreatePostSheetProps) {
         </div>
       </SheetContent>
     </Sheet>
+    {cropPortal}
+    </>
   )
 }

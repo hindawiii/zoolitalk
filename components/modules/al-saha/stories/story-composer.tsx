@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useImageCrop } from '@/components/shared/use-image-crop'
+import { fileToDataUrl } from '@/lib/crop-image'
 import { useUserStore } from '@/lib/stores/user-store'
 import {
   useStoryStore,
@@ -59,6 +61,7 @@ type Tool = 'none' | 'text' | 'sticker' | 'pen'
 export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps) {
   const { currentUser } = useUserStore()
   const addStory = useStoryStore((s) => s.addStory)
+  const { cropExisting, cropPortal } = useImageCrop()
 
   const [media, setMedia] = React.useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [filter, setFilter] = React.useState<StoryFilter>('original')
@@ -94,10 +97,22 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   }, [open, reset])
 
   // ----- media picking -----
-  const handleFile = (file?: File) => {
+  const handleFile = async (file?: File) => {
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setMedia({ url, type: file.type.startsWith('video') ? 'video' : 'image' })
+    // Videos go straight to the editor stage (already a 9:16 preview).
+    if (file.type.startsWith('video')) {
+      setMedia({ url: URL.createObjectURL(file), type: 'video' })
+      return
+    }
+    // Images are routed through the crop/preview editor (9:16) before editing.
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      cropExisting(dataUrl, 'story', (croppedUrl) => {
+        setMedia({ url: croppedUrl, type: 'image' })
+      })
+    } catch (err) {
+      console.error('[v0] Failed to read story image:', err)
+    }
   }
 
   // ----- pen drawing -----
@@ -594,6 +609,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
             </AnimatePresence>
           </>
         )}
+        {cropPortal}
       </motion.div>
     </AnimatePresence>
   )
