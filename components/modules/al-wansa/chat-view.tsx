@@ -10,8 +10,8 @@ import {
   Video,
   Send,
   Mic,
-  Image as ImageIcon,
   Smile,
+  Plus,
   X,
   Reply,
   Forward,
@@ -21,7 +21,6 @@ import {
   Check,
   CheckCheck,
   MapPin,
-  Camera,
   Languages,
   Gamepad2,
   Archive,
@@ -29,10 +28,8 @@ import {
   Bell,
   Pin,
   PinOff,
-  Clock,
   Pause,
   Play,
-  Settings,
   Info,
   Ban,
   Flag,
@@ -41,7 +38,6 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   DropdownMenu,
@@ -49,9 +45,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
@@ -68,7 +61,9 @@ import { useUserStore } from '@/lib/stores/user-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
 import { ChatBackgroundPattern, useChatTheme } from './chat-theme-provider'
-import { EmojiPicker, AnimatedEmoji, FlyingEmoji } from './animated-emoji'
+import { FlyingEmoji } from './animated-emoji'
+import { EmojiPickerSheet } from './emoji-picker-sheet'
+import { AttachmentSheet, type AttachmentAction } from './attachment-sheet'
 import { cn } from '@/lib/utils'
 import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
@@ -108,6 +103,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const [selectedMessage, setSelectedMessage] = React.useState<Message | null>(null)
   const [replyingTo, setReplyingTo] = React.useState<Message | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = React.useState(false)
+  const [showAttachments, setShowAttachments] = React.useState(false)
   const [flyingEmoji, setFlyingEmoji] = React.useState<string | null>(null)
   const [showLocationSheet, setShowLocationSheet] = React.useState(false)
   const [isListening, setIsListening] = React.useState(false)
@@ -121,7 +117,8 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const [viewerImage, setViewerImage] = React.useState<string | null>(null)
 
   const scrollRef = React.useRef<HTMLDivElement>(null)
-  const inputRef = React.useRef<HTMLInputElement>(null)
+  const inputRef = React.useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
   const recordingTimerRef = React.useRef<number | null>(null)
 
   const chat = chats.find((c) => c.id === activeChatId)
@@ -291,6 +288,27 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const handleEmojiSelect = (emoji: string) => {
     setInputValue((prev) => prev + emoji)
     setFlyingEmoji(emoji)
+  }
+
+  // Attachment bottom-sheet handler
+  const handleAttachment = (action: AttachmentAction) => {
+    setShowAttachments(false)
+    switch (action) {
+      case 'location':
+        handleShareLocation(false)
+        break
+      case 'audio':
+        startRecording()
+        break
+      case 'gallery':
+      case 'camera':
+      case 'document':
+      case 'contact':
+      default:
+        // Trigger the native file picker for media/document/contact actions
+        fileInputRef.current?.click()
+        break
+    }
   }
 
   if (!chat) return null
@@ -568,88 +586,61 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             </Button>
           </motion.div>
         ) : (
-          <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
-            {/* Settings Gear - opens wallpaper picker */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-10 w-10 flex-shrink-0"
-              onClick={() => setShowWallpaperPicker(true)}
-            >
-              <Settings className="h-5 w-5 text-muted-foreground" />
-            </Button>
-            
-            {/* Emoji Picker Toggle */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn('h-10 w-10 flex-shrink-0', showEmojiPicker && 'bg-secondary')}
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            >
-              {showEmojiPicker ? <X className="h-5 w-5" /> : <Smile className="h-5 w-5" />}
-            </Button>
-            
-            {/* Attachment Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-10 w-10 flex-shrink-0">
-                  <ImageIcon className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align={isRTL ? 'start' : 'start'} className="min-w-[180px]" dir={isRTL ? 'rtl' : 'ltr'}>
-                <DropdownMenuItem className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                  <ImageIcon className="h-4 w-4" />
-                  <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'صورة' : 'Photo'}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                  <Camera className="h-4 w-4" />
-                  <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'مسح مستند' : 'Scan Document'}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                    <MapPin className="h-4 w-4" />
-                    <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'موقع' : 'Location'}</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent dir={isRTL ? 'rtl' : 'ltr'}>
-                    <DropdownMenuItem onClick={() => handleShareLocation(false)} className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                      <MapPin className="h-4 w-4" />
-                      <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'الموقع الحالي' : 'Current Location'}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleShareLocation(true, 15)} className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                      <Clock className="h-4 w-4" />
-                      <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'مباشر 15 دقيقة' : 'Live 15 min'}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleShareLocation(true, 60)} className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                      <Clock className="h-4 w-4" />
-                      <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'مباشر 1 ساعة' : 'Live 1 hour'}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleShareLocation(true, 480)} className={cn('gap-2', isRTL && 'flex-row-reverse')}>
-                      <Clock className="h-4 w-4" />
-                      <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'مباشر 8 ساعات' : 'Live 8 hours'}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder={t('chat.typeMessage')}
+          <div className="flex items-end gap-2">
+            {/* Attachment "+" button - opens attachment bottom sheet */}
+            <Button
+              variant="ghost"
+              size="icon"
               className={cn(
-                'flex-1 rounded-full bg-secondary/50 border-none',
-                isRTL && 'font-arabic text-right'
+                'h-10 w-10 flex-shrink-0 rounded-full text-muted-foreground transition-transform',
+                showAttachments && 'bg-secondary rotate-45 text-primary'
               )}
-            />
+              onClick={() => {
+                setShowEmojiPicker(false)
+                setShowAttachments((v) => !v)
+              }}
+              aria-label={isRTL ? 'إضافة مرفق' : 'Add attachment'}
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+
+            {/* Multiline message field with emoji button inside */}
+            <div className="flex flex-1 items-end gap-1 rounded-3xl bg-secondary/50 px-3 py-1.5">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyPress}
+                rows={1}
+                placeholder={isRTL ? 'اكتب رسالة...' : (t('chat.typeMessage') as string)}
+                className={cn(
+                  'max-h-28 flex-1 resize-none border-none bg-transparent py-1.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground',
+                  isRTL && 'font-arabic text-right'
+                )}
+              />
+              {/* Emoji Picker Toggle */}
+              <button
+                type="button"
+                className={cn(
+                  'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground',
+                  showEmojiPicker && 'text-primary'
+                )}
+                onClick={() => {
+                  setShowAttachments(false)
+                  setShowEmojiPicker((v) => !v)
+                }}
+                aria-label={isRTL ? 'إيموجي' : 'Emoji'}
+              >
+                {showEmojiPicker ? <X className="h-5 w-5" /> : <Smile className="h-5 w-5" />}
+              </button>
+            </div>
 
             {inputValue.trim() ? (
               <Button
                 size="icon"
-                className="rounded-full bg-primary hover:bg-primary/90 flex-shrink-0"
+                className="flex-shrink-0 rounded-full bg-green-700 text-white hover:bg-green-800"
                 onClick={handleSend}
+                aria-label={isRTL ? 'إرسال' : 'Send'}
               >
                 <Send className={cn('h-5 w-5', isRTL && 'rotate-180')} />
               </Button>
@@ -661,6 +652,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   variant={isListening ? 'default' : 'ghost'}
                   className={cn('flex-shrink-0 rounded-full', isListening && 'recording-pulse')}
                   onClick={startSpeechToText}
+                  aria-label={isRTL ? 'تسجيل صوتي' : 'Voice'}
                 >
                   <Mic className="h-5 w-5" />
                 </Button>
@@ -708,31 +700,36 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         deleteTarget={deleteTarget}
       />
 
-      {/* Bottom-Docked Emoji Picker (Telegram Style) */}
+      {/* Hidden file input for media / document / contact attachments */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={() => {
+          // Reset so selecting the same file again re-triggers change
+          if (fileInputRef.current) fileInputRef.current.value = ''
+        }}
+      />
+
+      {/* Attachment Bottom Sheet (colored circular icons) */}
+      <AnimatePresence>
+        {showAttachments && (
+          <AttachmentSheet
+            isRTL={isRTL}
+            onClose={() => setShowAttachments(false)}
+            onSelect={handleAttachment}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Searchable, categorized Emoji Picker (bottom sheet) */}
       <AnimatePresence>
         {showEmojiPicker && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute bottom-[72px] inset-x-0 bg-card border-t z-30 overflow-hidden"
-          >
-            <div className="p-4 grid grid-cols-8 gap-3 place-items-center max-h-[200px] overflow-y-auto">
-              {['😊', '❤️', '😂', '👍', '🤲', '☕', '🙏', '💪', '🎉', '👏', '🤝', '✨', '😍', '🥰', '😢', '🔥', '🇸🇩', '💚', '🌴', '☀️', '🌙', '🌺', '🤗', '😎'].map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => {
-                    handleEmojiSelect(emoji)
-                    setShowEmojiPicker(false)
-                  }}
-                  className="text-2xl hover:scale-125 transition-transform active:scale-95 p-1"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </motion.div>
+          <EmojiPickerSheet
+            isRTL={isRTL}
+            onClose={() => setShowEmojiPicker(false)}
+            onSelect={handleEmojiSelect}
+          />
         )}
       </AnimatePresence>
 
