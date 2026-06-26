@@ -114,7 +114,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const [showClearDialog, setShowClearDialog] = React.useState(false)
   const [showBlockDialog, setShowBlockDialog] = React.useState(false)
   const [showReportDialog, setShowReportDialog] = React.useState(false)
-  const [viewerImage, setViewerImage] = React.useState<string | null>(null)
+  const [viewerMessage, setViewerMessage] = React.useState<Message | null>(null)
 
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -525,7 +525,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   onLongPress={() => setSelectedMessage(message)}
                   onReply={() => setReplyingTo(message)}
                   onSwipeReply={() => setReplyingTo(message)}
-                  onOpenImage={(url) => setViewerImage(url)}
+                  onOpenMedia={(m) => setViewerMessage(m)}
                   chatMessages={chatMessages}
                 />
               </React.Fragment>
@@ -640,7 +640,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                 size="icon"
                 className="flex-shrink-0 rounded-full bg-green-700 text-white hover:bg-green-800"
                 onClick={handleSend}
-                aria-label={isRTL ? 'إرسال' : 'Send'}
+                aria-label={isRTL ? 'إ��سال' : 'Send'}
               >
                 <Send className={cn('h-5 w-5', isRTL && 'rotate-180')} />
               </Button>
