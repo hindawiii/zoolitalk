@@ -40,11 +40,15 @@ export interface Message {
   // Translation
   translatedContent?: string
   originalLanguage?: string
+  // Channel reactions (interactive channels): emoji -> list of userIds
+  reactions?: Record<string, string[]>
 }
 
 export interface Chat {
   id: string
-  type: 'private' | 'group'
+  type: 'private' | 'group' | 'channel'
+  // Channel posting mode: 'broadcast' = admins only, 'interactive' = members can react/comment
+  channelMode?: 'broadcast' | 'interactive'
   name: string
   nameAr: string
   avatar: string
@@ -127,6 +131,9 @@ interface ChatState {
   
   // Translation
   translateMessage: (chatId: string, messageId: string, translatedContent: string, originalLanguage: string) => void
+
+  // Channel reactions (interactive channels)
+  toggleReaction: (chatId: string, messageId: string, emoji: string, userId: string) => void
   
   // Games
   activeGame: string | null
@@ -160,6 +167,23 @@ const demoChats: Chat[] = [
       { id: 'user-1', name: 'Ahmed', avatar: '/avatars/ahmed.jpg', role: 'admin', isOnline: true },
       { id: 'user-2', name: 'Fatima', avatar: '/avatars/fatima.jpg', role: 'member', isOnline: true },
       { id: 'user-3', name: 'Omar', avatar: '/avatars/omar.jpg', role: 'moderator', isOnline: false },
+    ],
+  },
+  {
+    id: 'chat-channel-1',
+    type: 'channel',
+    channelMode: 'interactive',
+    name: 'Sudan News',
+    nameAr: 'أخبار السودان',
+    avatar: '',
+    lastMessage: 'تغطية مباشرة لأهم الأحداث',
+    lastMessageTime: new Date(Date.now() - 1000 * 60 * 20),
+    unreadCount: 3,
+    admins: ['user-1'],
+    participants: [
+      { id: 'user-1', name: 'Ahmed', avatar: '/avatars/ahmed.jpg', role: 'admin', isOnline: true },
+      { id: 'user-2', name: 'Fatima', avatar: '/avatars/fatima.jpg', role: 'member', isOnline: true },
+      { id: 'user-3', name: 'Omar', avatar: '/avatars/omar.jpg', role: 'member', isOnline: false },
     ],
   },
   {
@@ -458,6 +482,32 @@ const demoMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
+  'chat-channel-1': [
+    {
+      id: 'cmsg-1',
+      chatId: 'chat-channel-1',
+      senderId: 'user-1',
+      senderName: 'Ahmed',
+      senderAvatar: '/avatars/ahmed.jpg',
+      content: 'أهلاً بكم في قناة أخبار السودان. تابعونا لأهم المستجدات.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60),
+      status: 'read',
+      reactions: { '👍': ['user-2', 'user-3'], '❤️': ['user-2'] },
+    },
+    {
+      id: 'cmsg-2',
+      chatId: 'chat-channel-1',
+      senderId: 'user-1',
+      senderName: 'Ahmed',
+      senderAvatar: '/avatars/ahmed.jpg',
+      content: 'تغطية مباشرة لأهم الأحداث الليلة الساعة التاسعة.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 20),
+      status: 'read',
+      reactions: { '🔥': ['user-3'] },
+    },
+  ],
 }
 
 export const useChatStore = create<ChatState>()(
@@ -691,10 +741,34 @@ export const useChatStore = create<ChatState>()(
               msg.id === messageId
                 ? { ...msg, translatedContent, originalLanguage }
                 : msg
-            ),
+          ),
+        },
+      })),
+
+      // Channel reactions (interactive channels)
+      toggleReaction: (chatId, messageId, emoji, userId) =>
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [chatId]: (state.messages[chatId] || []).map((msg) => {
+              if (msg.id !== messageId) return msg
+              const reactions = { ...(msg.reactions || {}) }
+              const users = reactions[emoji] || []
+              if (users.includes(userId)) {
+                const next = users.filter((u) => u !== userId)
+                if (next.length === 0) {
+                  delete reactions[emoji]
+                } else {
+                  reactions[emoji] = next
+                }
+              } else {
+                reactions[emoji] = [...users, userId]
+              }
+              return { ...msg, reactions }
+            }),
           },
         })),
-      
+
       // Games
       activeGame: null,
       setActiveGame: (game) => set({ activeGame: game }),
@@ -714,9 +788,19 @@ export const useChatStore = create<ChatState>()(
         if (!mergedMessages['chat-2'] || mergedMessages['chat-2'].length === 0) {
           mergedMessages['chat-2'] = demoMessages['chat-2']
         }
+        if (!mergedMessages['chat-channel-1'] || mergedMessages['chat-channel-1'].length === 0) {
+          mergedMessages['chat-channel-1'] = demoMessages['chat-channel-1']
+        }
+        // Ensure the demo channel chat exists in the chats list
+        const persistedChats = p.chats || current.chats
+        const hasChannel = persistedChats.some((c) => c.id === 'chat-channel-1')
+        const mergedChats = hasChannel
+          ? persistedChats
+          : [...persistedChats, current.chats.find((c) => c.id === 'chat-channel-1')!].filter(Boolean)
         return {
           ...current,
           ...p,
+          chats: mergedChats,
           messages: mergedMessages,
         }
       },

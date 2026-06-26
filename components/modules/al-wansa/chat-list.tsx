@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { motion, AnimatePresence, PanInfo, useAnimation } from 'framer-motion'
-import { Search, Plus, Users, Archive, BellOff, Pin, Trash2, Settings2 } from 'lucide-react'
+import { Search, Plus, Users, Archive, BellOff, Pin, Trash2, Settings2, Megaphone } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -238,7 +238,9 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
             <Avatar className="h-12 w-12">
               <AvatarImage src={chat.avatar} alt={chat.name} />
               <AvatarFallback className="bg-primary/10 text-primary">
-                {chat.type === 'group' ? (
+                {chat.type === 'channel' ? (
+                  <Megaphone className="h-5 w-5" />
+                ) : chat.type === 'group' ? (
                   <Users className="h-5 w-5" />
                 ) : (
                   (isRTL ? chat.nameAr : chat.name)[0]
@@ -253,6 +255,12 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
             {chat.type === 'group' && (
               <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-background">
                 {chat.participants?.length || 0}
+              </span>
+            )}
+            {/* Channel indicator */}
+            {chat.type === 'channel' && (
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full flex items-center justify-center border-2 border-background">
+                <Megaphone className="h-2.5 w-2.5" />
               </span>
             )}
           </div>
