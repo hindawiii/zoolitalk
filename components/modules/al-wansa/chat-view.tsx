@@ -36,6 +36,9 @@ import {
   FileText,
   Download,
   Megaphone,
+  MessageSquare,
+  Loader2,
+  ImageIcon,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -57,7 +60,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { useChatStore, type Message } from '@/lib/stores/chat-store'
+import { useChatStore, type Message, type ChannelComment } from '@/lib/stores/chat-store'
 import { useUserStore } from '@/lib/stores/user-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
@@ -65,6 +68,8 @@ import { ChatBackgroundPattern, useChatTheme } from './chat-theme-provider'
 import { FlyingEmoji } from './animated-emoji'
 import { EmojiPickerSheet } from './emoji-picker-sheet'
 import { AttachmentSheet, type AttachmentAction } from './attachment-sheet'
+import { ImageViewer } from '@/components/shared/image-viewer'
+import { compressImageToLimit } from '@/lib/image-compress'
 import { cn } from '@/lib/utils'
 import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
@@ -118,6 +123,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     blockChat,
     unblockChat,
     toggleReaction,
+    typingUsers,
+    markChatRead,
+    addChannelComment,
   } = useChatStore()
   const { currentUser } = useUserStore()
   const { t, language, isRTL } = useLanguage()
@@ -139,7 +147,15 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const [showClearDialog, setShowClearDialog] = React.useState(false)
   const [showBlockDialog, setShowBlockDialog] = React.useState(false)
   const [showReportDialog, setShowReportDialog] = React.useState(false)
-  const [viewerMessage, setViewerMessage] = React.useState<Message | null>(null)
+  // Fullscreen image viewer (opened by tapping an image message)
+  const [imageViewerUrl, setImageViewerUrl] = React.useState<string | null>(null)
+  // "Compressing image..." indicator while preparing an image for sending
+  const [isCompressing, setIsCompressing] = React.useState(false)
+  // Pagination: how many of the latest messages are currently rendered
+  const [visibleCount, setVisibleCount] = React.useState(50)
+  const [isLoadingOlder, setIsLoadingOlder] = React.useState(false)
+  // Channel comments sheet target (interactive channels)
+  const [commentsTarget, setCommentsTarget] = React.useState<Message | null>(null)
 
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -157,12 +173,89 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft
 
-  // Auto-scroll to bottom on new messages
+  // The Radix ScrollArea forwards its ref to the (overflow-hidden) root, so the
+  // actual scrollable element is the inner viewport. Grab it on demand.
+  const getViewport = React.useCallback(
+    () => scrollRef.current?.querySelector('[data-slot="scroll-area-viewport"]') as HTMLElement | null,
+    [],
+  )
+
+  // Only the latest `visibleCount` messages are rendered (pagination).
+  const visibleMessages = React.useMemo(
+    () => chatMessages.slice(Math.max(0, chatMessages.length - visibleCount)),
+    [chatMessages, visibleCount],
+  )
+  const hasOlderMessages = chatMessages.length > visibleMessages.length
+
+  // Users currently typing in this chat (excluding ourselves)
+  const othersTyping = React.useMemo(
+    () => (typingUsers[activeChatId || ''] || []).filter((id) => id !== currentUser?.id),
+    [typingUsers, activeChatId, currentUser?.id],
+  )
+
+  const prevCountRef = React.useRef(0)
+  const prevScrollHeightRef = React.useRef(0)
+
+  // When switching chats: reset pagination, mark as read, jump to bottom.
   React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (!activeChatId) return
+    setVisibleCount(50)
+    setIsLoadingOlder(false)
+    markChatRead(activeChatId)
+    prevCountRef.current = 0
+    requestAnimationFrame(() => {
+      const vp = getViewport()
+      if (vp) vp.scrollTop = vp.scrollHeight
+    })
+  }, [activeChatId, markChatRead, getViewport])
+
+  // Keep the unread counter cleared while new messages stream into the open chat.
+  React.useEffect(() => {
+    if (activeChatId) markChatRead(activeChatId)
+  }, [activeChatId, chatMessages.length, markChatRead])
+
+  // Auto-scroll to bottom when a NEW message is appended (not when loading
+  // older history, which would otherwise yank the view downward).
+  React.useEffect(() => {
+    const vp = getViewport()
+    if (!vp) return
+
+    if (isLoadingOlder) return
+
+    const grew = visibleMessages.length > prevCountRef.current
+    const nearBottom = vp.scrollHeight - vp.scrollTop - vp.clientHeight < 240
+
+    if (prevCountRef.current === 0 || (grew && nearBottom)) {
+      vp.scrollTop = vp.scrollHeight
     }
-  }, [chatMessages])
+    prevCountRef.current = visibleMessages.length
+  }, [visibleMessages.length, isLoadingOlder, getViewport])
+
+  // Load 50 older messages when the user scrolls near the top.
+  React.useEffect(() => {
+    const vp = getViewport()
+    if (!vp) return
+
+    const handleScroll = () => {
+      if (vp.scrollTop < 60 && hasOlderMessages && !isLoadingOlder) {
+        setIsLoadingOlder(true)
+        prevScrollHeightRef.current = vp.scrollHeight
+        // Simulate fetching a page of older messages.
+        window.setTimeout(() => {
+          setVisibleCount((c) => c + 50)
+          setIsLoadingOlder(false)
+          // Preserve the scroll position after prepending older messages.
+          requestAnimationFrame(() => {
+            const v = getViewport()
+            if (v) v.scrollTop = v.scrollHeight - prevScrollHeightRef.current
+          })
+        }, 600)
+      }
+    }
+
+    vp.addEventListener('scroll', handleScroll, { passive: true })
+    return () => vp.removeEventListener('scroll', handleScroll)
+  }, [getViewport, hasOlderMessages, isLoadingOlder])
 
   // Recording timer
   React.useEffect(() => {
@@ -339,6 +432,44 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         // Trigger the native file picker for media/document/contact actions
         fileInputRef.current?.click()
         break
+    }
+  }
+
+  // Compress a selected image (target max 2MB) then send it as an image message.
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // Reset so selecting the same file again re-triggers change
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (!file || !currentUser || !activeChatId) return
+
+    if (!file.type.startsWith('image/')) {
+      alert(isRTL ? 'يرجى اختيار صورة' : 'Please choose an image')
+      return
+    }
+
+    setIsCompressing(true)
+    try {
+      const imageUrl = await compressImageToLimit(file, 2 * 1024 * 1024)
+      const newMessage: Message = {
+        id: `msg-${Date.now()}`,
+        chatId: activeChatId,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderAvatar: currentUser.avatar,
+        content: '',
+        type: 'image',
+        imageUrl,
+        timestamp: new Date(),
+        status: 'sending',
+        replyTo: replyingTo?.id,
+      }
+      addMessage(activeChatId, newMessage)
+      setReplyingTo(null)
+    } catch (err) {
+      console.log('[v0] Image compression failed:', err)
+      alert(isRTL ? 'تعذر معالجة الصورة' : 'Could not process the image')
+    } finally {
+      setIsCompressing(false)
     }
   }
 
@@ -526,15 +657,21 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
       <div className="flex-1 overflow-hidden relative z-0 min-h-0">
         <ScrollArea ref={scrollRef} className="h-full p-4">
           <div className="space-y-4">
-          {chatMessages.map((message, index) => {
+          {/* Loading older messages spinner (pagination) */}
+          {isLoadingOlder && (
+            <div className="flex justify-center py-2">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {visibleMessages.map((message, index) => {
             const isSent = message.senderId === currentUser?.id
             const isGroup = chat.type === 'group'
             const showAvatar = !isSent && (
-              index === 0 || chatMessages[index - 1]?.senderId !== message.senderId
+              index === 0 || visibleMessages[index - 1]?.senderId !== message.senderId
             )
             // Show sender name in group bubbles when a new sender's run begins
             const showSenderName = isGroup && !isSent && (
-              index === 0 || chatMessages[index - 1]?.senderId !== message.senderId
+              index === 0 || visibleMessages[index - 1]?.senderId !== message.senderId
             )
 
             // System (join/leave/create) events: centered gray text
@@ -568,7 +705,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             }
 
             // Date separator when the day changes
-            const prev = chatMessages[index - 1]
+            const prev = visibleMessages[index - 1]
             const showDate =
               index === 0 ||
               !prev ||
@@ -599,7 +736,8 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   onLongPress={() => setSelectedMessage(message)}
                   onReply={() => setReplyingTo(message)}
                   onSwipeReply={() => setReplyingTo(message)}
-                  onOpenMedia={(m) => setViewerMessage(m)}
+                  onOpenImage={(url) => setImageViewerUrl(url)}
+                  onOpenComments={() => setCommentsTarget(message)}
                   chatMessages={chatMessages}
                 />
               </React.Fragment>
@@ -791,11 +929,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
       <input
         ref={fileInputRef}
         type="file"
+        accept="image/*"
         className="hidden"
-        onChange={() => {
-          // Reset so selecting the same file again re-triggers change
-          if (fileInputRef.current) fileInputRef.current.value = ''
-        }}
+        onChange={handleFileSelected}
       />
 
       {/* Attachment Bottom Sheet (colored circular icons) */}
