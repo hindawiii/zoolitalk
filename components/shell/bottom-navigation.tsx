@@ -10,6 +10,7 @@ import {
   User 
 } from 'lucide-react'
 import { useAppStore, type TabId } from '@/lib/stores/app-store'
+import { useChatStore } from '@/lib/stores/chat-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +31,10 @@ const navItems: NavItem[] = [
 export function BottomNavigation() {
   const { activeTab, setActiveTab } = useAppStore()
   const { t, isRTL } = useLanguage()
+  // Total unread messages across all non-archived chats (for the Wansa badge)
+  const totalUnread = useChatStore((s) =>
+    s.chats.reduce((sum, c) => (c.isArchived ? sum : sum + (c.unreadCount || 0)), 0)
+  )
 
   const handleTabChange = (tabId: TabId) => {
     // Only update if tab is different - prevents unnecessary re-renders
@@ -84,9 +89,11 @@ export function BottomNavigation() {
                 {t(item.labelKey)}
               </span>
 
-              {/* Notification badge example - can be connected to store */}
-              {item.id === 'wansa' && (
-                <span className="absolute top-1 end-1 w-2 h-2 bg-accent rounded-full" />
+              {/* Unread messages badge on the Wansa tab */}
+              {item.id === 'wansa' && totalUnread > 0 && (
+                <span className="absolute top-0.5 end-1 z-10 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-card">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
               )}
             </button>
           )

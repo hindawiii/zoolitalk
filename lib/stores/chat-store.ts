@@ -42,6 +42,27 @@ export interface Message {
   originalLanguage?: string
   // Channel reactions (interactive channels): emoji -> list of userIds
   reactions?: Record<string, string[]>
+  // Channel comments (interactive channels)
+  comments?: ChannelComment[]
+}
+
+export interface ChannelComment {
+  id: string
+  userId: string
+  userName: string
+  userAvatar: string
+  content: string
+  timestamp: Date
+}
+
+// A lightweight notification payload surfaced when a message arrives
+// while the user is outside of the relevant chat.
+export interface ChatNotification {
+  id: string
+  chatId: string
+  senderName: string
+  senderAvatar: string
+  preview: string
 }
 
 export interface Chat {
@@ -91,6 +112,8 @@ interface ChatState {
   // Messages (keyed by chatId)
   messages: Record<string, Message[]>
   addMessage: (chatId: string, message: Message) => void
+  // Incoming message from someone else (drives unread + notifications)
+  receiveMessage: (chatId: string, message: Message) => void
   editMessage: (chatId: string, messageId: string, newContent: string) => void
   deleteMessage: (chatId: string, messageId: string) => void
   deleteMessageForEveryone: (chatId: string, messageId: string) => void
@@ -99,6 +122,16 @@ interface ChatState {
   // Typing indicators
   typingUsers: Record<string, string[]>
   setTyping: (chatId: string, userId: string, isTyping: boolean) => void
+
+  // Unread tracking
+  markChatRead: (chatId: string) => void
+
+  // New-message notification (for global toast / sound / vibration)
+  notification: ChatNotification | null
+  clearNotification: () => void
+
+  // Channel comments (interactive channels)
+  addChannelComment: (chatId: string, messageId: string, comment: ChannelComment) => void
   
   // Archive and Mute
   archiveChat: (chatId: string) => void
@@ -538,6 +571,53 @@ export const useChatStore = create<ChatState>()(
               : chat
           ),
         })),
+      receiveMessage: (chatId, message) =>
+        set((state) => {
+          const isActive = state.activeChatId === chatId
+          const targetChat = state.chats.find((c) => c.id === chatId)
+          const preview =
+            message.content ||
+            (message.type === 'location'
+              ? '📍 موقع'
+              : message.type === 'voice'
+                ? '🎤 رسالة صوتية'
+                : message.type === 'image'
+                  ? '📷 صورة'
+                  : 'رسالة جديدة')
+          return {
+            messages: {
+              ...state.messages,
+              [chatId]: [...(state.messages[chatId] || []), message],
+            },
+            chats: state.chats.map((chat) =>
+              chat.id === chatId
+                ? {
+                    ...chat,
+                    lastMessage: preview,
+                    lastMessageTime: message.timestamp,
+                    unreadCount: isActive ? 0 : (chat.unreadCount || 0) + 1,
+                  }
+                : chat
+            ),
+            // Clear any typing flag from the sender now that the message arrived
+            typingUsers: {
+              ...state.typingUsers,
+              [chatId]: (state.typingUsers[chatId] || []).filter((id) => id !== message.senderId),
+            },
+            // Only raise a notification when the user is outside this chat
+            // and the chat isn't muted.
+            notification:
+              isActive || targetChat?.isMuted
+                ? state.notification
+                : {
+                    id: `notif-${Date.now()}`,
+                    chatId,
+                    senderName: message.senderName,
+                    senderAvatar: message.senderAvatar,
+                    preview,
+                  },
+          }
+        }),
       editMessage: (chatId, messageId, newContent) =>
         set((state) => ({
           messages: {
@@ -586,6 +666,31 @@ export const useChatStore = create<ChatState>()(
             typingUsers: { ...state.typingUsers, [chatId]: updated },
           }
         }),
+
+      // Unread tracking
+      markChatRead: (chatId) =>
+        set((state) => ({
+          chats: state.chats.map((chat) =>
+            chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+          ),
+        })),
+
+      // New-message notification
+      notification: null,
+      clearNotification: () => set({ notification: null }),
+
+      // Channel comments (interactive channels)
+      addChannelComment: (chatId, messageId, comment) =>
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [chatId]: (state.messages[chatId] || []).map((msg) =>
+              msg.id === messageId
+                ? { ...msg, comments: [...(msg.comments || []), comment] }
+                : msg
+            ),
+          },
+        })),
       
       // Archive and Mute
       archiveChat: (chatId) =>

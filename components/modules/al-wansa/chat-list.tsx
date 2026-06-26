@@ -291,9 +291,9 @@ function SwipeableChatItem({ chat, onClick, formatTime, onArchive, onMute, onPin
                   'flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center',
                   chat.isMuted 
                     ? 'bg-muted text-muted-foreground' 
-                    : 'bg-accent text-accent-foreground'
+                    : 'bg-primary text-primary-foreground'
                 )}>
-                  {chat.unreadCount}
+                  {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
                 </span>
               )}
             </div>
