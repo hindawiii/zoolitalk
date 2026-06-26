@@ -68,6 +68,29 @@ import { cn } from '@/lib/utils'
 import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
 
+// Distinct, accessible colors for group member names (one per sender, deterministic)
+const MEMBER_NAME_COLORS = [
+  '#D97706', // amber
+  '#0E7490', // cyan-700
+  '#9333EA', // purple
+  '#DC2626', // red
+  '#0891B2', // sky
+  '#15803D', // green
+  '#C2410C', // orange
+  '#7C3AED', // violet
+  '#BE185D', // pink
+  '#4338CA', // indigo
+]
+
+function getMemberColor(senderId: string) {
+  let hash = 0
+  for (let i = 0; i < senderId.length; i++) {
+    hash = (hash << 5) - hash + senderId.charCodeAt(i)
+    hash |= 0
+  }
+  return MEMBER_NAME_COLORS[Math.abs(hash) % MEMBER_NAME_COLORS.length]
+}
+
 interface ChatViewProps {
   onBack: () => void
   onOpenGames?: () => void
@@ -349,9 +372,19 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             <h3 className={cn('font-semibold truncate', isRTL && 'font-arabic')}>
               {isRTL ? chat.nameAr : chat.name}
             </h3>
-            <p className="text-xs text-muted-foreground">
-              {chat.isOnline ? t('chat.online') : t('chat.offline')}
-            </p>
+            {chat.type === 'group' ? (
+              <p className={cn('text-xs text-muted-foreground truncate', isRTL && 'font-arabic')}>
+                {(() => {
+                  const count = chat.participants?.length ?? 0
+                  if (isRTL) return `${count} ${count === 1 ? 'عضو' : 'أعضاء'}`
+                  return `${count} ${count === 1 ? 'member' : 'members'}`
+                })()}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {chat.isOnline ? t('chat.online') : t('chat.offline')}
+              </p>
+            )}
           </div>
         </button>
 
@@ -479,10 +512,29 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
           <div className="space-y-4">
           {chatMessages.map((message, index) => {
             const isSent = message.senderId === currentUser?.id
+            const isGroup = chat.type === 'group'
             const showAvatar = !isSent && (
               index === 0 || chatMessages[index - 1]?.senderId !== message.senderId
             )
-            
+            // Show sender name in group bubbles when a new sender's run begins
+            const showSenderName = isGroup && !isSent && (
+              index === 0 || chatMessages[index - 1]?.senderId !== message.senderId
+            )
+
+            // System (join/leave/create) events: centered gray text
+            if (message.type === 'system') {
+              return (
+                <div key={message.id} className="flex justify-center py-1">
+                  <span className={cn(
+                    'text-[11px] text-muted-foreground bg-muted/60 backdrop-blur-sm px-3 py-1 rounded-full max-w-[80%] text-center',
+                    isRTL && 'font-arabic'
+                  )}>
+                    {message.content}
+                  </span>
+                </div>
+              )
+            }
+
             // Don't show deleted messages
             if (message.deletedForEveryone) {
               return (
@@ -522,6 +574,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   message={message}
                   isSent={isSent}
                   showAvatar={showAvatar}
+                  showSenderName={showSenderName}
                   onLongPress={() => setSelectedMessage(message)}
                   onReply={() => setReplyingTo(message)}
                   onSwipeReply={() => setReplyingTo(message)}
@@ -795,6 +848,7 @@ interface MessageBubbleProps {
   message: Message
   isSent: boolean
   showAvatar: boolean
+  showSenderName?: boolean
   onLongPress: () => void
   onReply: () => void
   onSwipeReply: () => void
@@ -802,7 +856,7 @@ interface MessageBubbleProps {
   chatMessages: Message[]
 }
 
-function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
+function MessageBubble({ message, isSent, showAvatar, showSenderName, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
   const { language, isRTL } = useLanguage()
   const longPressTimer = React.useRef<number | null>(null)
   const controls = useAnimation()
@@ -933,6 +987,16 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
           )}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
+          {/* Sender name (groups, received messages only) */}
+          {showSenderName && (
+            <p
+              className={cn('mb-0.5 text-xs font-semibold leading-tight', isRTL && 'font-arabic')}
+              style={{ color: getMemberColor(message.senderId) }}
+            >
+              {message.senderName}
+            </p>
+          )}
+
           {/* Reply Preview */}
           {replyMessage && (
             <div className={cn(

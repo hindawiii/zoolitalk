@@ -8,7 +8,9 @@ export interface Message {
   senderName: string
   senderAvatar: string
   content: string
-  type: 'text' | 'voice' | 'image' | 'sticker' | 'location' | 'video' | 'document'
+  type: 'text' | 'voice' | 'image' | 'sticker' | 'location' | 'video' | 'document' | 'system'
+  // System event (join/leave) for groups
+  systemEvent?: 'join' | 'leave' | 'create'
   voiceDuration?: number
   imageUrl?: string
   stickerUrl?: string
@@ -397,6 +399,65 @@ const demoMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
+  'chat-2': [
+    {
+      id: 'gmsg-0',
+      chatId: 'chat-2',
+      senderId: 'system',
+      senderName: '',
+      senderAvatar: '',
+      content: 'أنشأ أحمد المجموعة "شلة الخرطوم"',
+      type: 'system',
+      systemEvent: 'create',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-1',
+      chatId: 'chat-2',
+      senderId: 'user-1',
+      senderName: 'Ahmed',
+      senderAvatar: '/avatars/ahmed.jpg',
+      content: 'السلام عليكم يا شباب، الجبنة الليلة عندي',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 50),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-2',
+      chatId: 'chat-2',
+      senderId: 'system',
+      senderName: '',
+      senderAvatar: '',
+      content: 'انضم عمر إلى المجموعة',
+      type: 'system',
+      systemEvent: 'join',
+      timestamp: new Date(Date.now() - 1000 * 60 * 45),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-3',
+      chatId: 'chat-2',
+      senderId: 'user-3',
+      senderName: 'Omar',
+      senderAvatar: '/avatars/omar.jpg',
+      content: 'وعليكم السلام، إن شاء الله نجي',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 40),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-4',
+      chatId: 'chat-2',
+      senderId: 'user-2',
+      senderName: 'Fatima',
+      senderAvatar: '/avatars/fatima.jpg',
+      content: 'الجبنة جاهزة يا جماعة!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
+      status: 'delivered',
+    },
+  ],
 }
 
 export const useChatStore = create<ChatState>()(
@@ -640,11 +701,25 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: 'rakobatna-chat-storage',
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         chats: state.chats,
         messages: state.messages,
       }),
+      // Ensure the group demo conversation is available for existing users too
+      merge: (persisted, current) => {
+        const p = (persisted as Partial<ChatState>) || {}
+        const mergedMessages = { ...current.messages, ...(p.messages || {}) }
+        if (!mergedMessages['chat-2'] || mergedMessages['chat-2'].length === 0) {
+          mergedMessages['chat-2'] = demoMessages['chat-2']
+        }
+        return {
+          ...current,
+          ...p,
+          messages: mergedMessages,
+        }
+      },
     }
   )
 )
