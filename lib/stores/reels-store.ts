@@ -16,6 +16,7 @@ export interface MentionUser {
 export interface ReelComment {
   id: string
   reelId: string
+  parentId: string | null // null = top-level comment, otherwise the comment being replied to
   authorId: string
   authorName: string
   authorNameAr: string
@@ -24,6 +25,11 @@ export interface ReelComment {
   mentions: string[] // usernames mentioned
   createdAt: number
   likes: number
+  likedByMe: boolean
+}
+
+export interface CommentThread extends ReelComment {
+  replies: ReelComment[]
 }
 
 export interface ReelTrack {
@@ -154,6 +160,7 @@ const demoComments: ReelComment[] = [
   {
     id: 'rc-1',
     reelId: 'reel-1',
+    parentId: null,
     authorId: 'user-3',
     authorName: 'Omar Hassan',
     authorNameAr: 'عمر حسن',
@@ -162,10 +169,12 @@ const demoComments: ReelComment[] = [
     mentions: [],
     createdAt: now - 1000 * 60 * 20,
     likes: 12,
+    likedByMe: false,
   },
   {
     id: 'rc-2',
     reelId: 'reel-1',
+    parentId: null,
     authorId: 'user-4',
     authorName: 'Sara Mohamed',
     authorNameAr: 'سارة محمد',
@@ -174,6 +183,21 @@ const demoComments: ReelComment[] = [
     mentions: ['fatima_ali'],
     createdAt: now - 1000 * 60 * 10,
     likes: 4,
+    likedByMe: false,
+  },
+  {
+    id: 'rc-3',
+    reelId: 'reel-1',
+    parentId: 'rc-2',
+    authorId: 'user-2',
+    authorName: 'Fatima Ali',
+    authorNameAr: 'فاطمة علي',
+    authorAvatar: '/avatars/fatima.jpg',
+    text: '@sara_m شكراً يا قمر 💚',
+    mentions: ['sara_m'],
+    createdAt: now - 1000 * 60 * 8,
+    likes: 2,
+    likedByMe: false,
   },
 ]
 
@@ -188,9 +212,15 @@ interface ReelsState {
   toggleSave: (id: string) => void
   shareReel: (id: string) => void
   addComment: (
-    comment: Omit<ReelComment, 'id' | 'createdAt' | 'likes' | 'mentions'> & { mentions?: string[] },
+    comment: Omit<ReelComment, 'id' | 'createdAt' | 'likes' | 'likedByMe' | 'mentions' | 'parentId'> & {
+      mentions?: string[]
+      parentId?: string | null
+    },
   ) => void
+  toggleCommentLike: (commentId: string) => void
   getComments: (reelId: string) => ReelComment[]
+  getCommentThreads: (reelId: string) => CommentThread[]
+  getCommentCount: (reelId: string) => number
 }
 
 export const useReelsStore = create<ReelsState>()(
@@ -235,17 +265,58 @@ export const useReelsStore = create<ReelsState>()(
         const newComment: ReelComment = {
           ...comment,
           id: `rc-${Date.now()}`,
+          parentId: comment.parentId ?? null,
           mentions: comment.mentions ?? [],
           createdAt: Date.now(),
           likes: 0,
+          likedByMe: false,
         }
         set((state) => ({ comments: [...state.comments, newComment] }))
+
+        // Notify every mentioned user (skip self-mentions).
+        const reel = get().reels.find((r) => r.id === comment.reelId)
+        ;(newComment.mentions ?? []).forEach((username) => {
+          const target = MENTION_USERS.find((u) => u.username === username)
+          if (!target || target.id === comment.authorId) return
+          useReelNotificationsStore.getState().push({
+            type: 'mention',
+            recipientId: target.id,
+            actorId: comment.authorId,
+            actorName: comment.authorNameAr,
+            actorAvatar: comment.authorAvatar,
+            reelId: comment.reelId,
+            reelPoster: reel?.posterUrl ?? '',
+            commentText: newComment.text,
+          })
+        })
       },
+
+      toggleCommentLike: (commentId) =>
+        set((state) => ({
+          comments: state.comments.map((c) =>
+            c.id === commentId
+              ? { ...c, likedByMe: !c.likedByMe, likes: c.likes + (c.likedByMe ? -1 : 1) }
+              : c,
+          ),
+        })),
 
       getComments: (reelId) =>
         get()
           .comments.filter((c) => c.reelId === reelId)
           .sort((a, b) => a.createdAt - b.createdAt),
+
+      getCommentThreads: (reelId) => {
+        const all = get()
+          .comments.filter((c) => c.reelId === reelId)
+          .sort((a, b) => a.createdAt - b.createdAt)
+        const tops = all.filter((c) => !c.parentId)
+        return tops.map((t) => ({
+          ...t,
+          replies: all.filter((c) => c.parentId === t.id),
+        }))
+      },
+
+      getCommentCount: (reelId) => get().comments.filter((c) => c.reelId === reelId).length,
     }),
     {
       name: 'rakobatna-reels-storage',
@@ -260,3 +331,59 @@ export function extractMentions(text: string): string[] {
   const matches = text.match(/@([a-zA-Z0-9_]+)/g) ?? []
   return Array.from(new Set(matches.map((m) => m.slice(1))))
 }
+
+// Resolve a mentioned @username to a known user (for navigation).
+export function resolveMention(username: string): MentionUser | undefined {
+  return MENTION_USERS.find((u) => u.username.toLowerCase() === username.toLowerCase())
+}
+
+// ----- Mention notifications -----
+
+export interface ReelNotification {
+  id: string
+  type: 'mention'
+  recipientId: string
+  actorId: string
+  actorName: string
+  actorAvatar: string
+  reelId: string
+  reelPoster: string
+  commentText: string
+  createdAt: number
+  read: boolean
+}
+
+interface ReelNotificationsState {
+  notifications: ReelNotification[]
+  push: (n: Omit<ReelNotification, 'id' | 'createdAt' | 'read'>) => void
+  markAllRead: () => void
+  unreadCount: (recipientId: string) => number
+  forUser: (recipientId: string) => ReelNotification[]
+}
+
+export const useReelNotificationsStore = create<ReelNotificationsState>()(
+  persist(
+    (set, get) => ({
+      notifications: [],
+      push: (n) =>
+        set((state) => ({
+          notifications: [
+            { ...n, id: `rn-${Date.now()}`, createdAt: Date.now(), read: false },
+            ...state.notifications,
+          ].slice(0, 50),
+        })),
+      markAllRead: () =>
+        set((state) => ({ notifications: state.notifications.map((x) => ({ ...x, read: true })) })),
+      unreadCount: (recipientId) =>
+        get().notifications.filter((x) => x.recipientId === recipientId && !x.read).length,
+      forUser: (recipientId) =>
+        get()
+          .notifications.filter((x) => x.recipientId === recipientId)
+          .sort((a, b) => b.createdAt - a.createdAt),
+    }),
+    {
+      name: 'rakobatna-reel-notifications',
+      storage: createJSONStorage(() => localStorage),
+    },
+  ),
+)
