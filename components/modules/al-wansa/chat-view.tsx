@@ -35,6 +35,7 @@ import {
   Flag,
   FileText,
   Download,
+  Megaphone,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -68,6 +69,29 @@ import { cn } from '@/lib/utils'
 import { format, isToday, isYesterday, isSameDay } from 'date-fns'
 import { ar, enUS } from 'date-fns/locale'
 
+// Distinct, accessible colors for group member names (one per sender, deterministic)
+const MEMBER_NAME_COLORS = [
+  '#D97706', // amber
+  '#0E7490', // cyan-700
+  '#9333EA', // purple
+  '#DC2626', // red
+  '#0891B2', // sky
+  '#15803D', // green
+  '#C2410C', // orange
+  '#7C3AED', // violet
+  '#BE185D', // pink
+  '#4338CA', // indigo
+]
+
+function getMemberColor(senderId: string) {
+  let hash = 0
+  for (let i = 0; i < senderId.length; i++) {
+    hash = (hash << 5) - hash + senderId.charCodeAt(i)
+    hash |= 0
+  }
+  return MEMBER_NAME_COLORS[Math.abs(hash) % MEMBER_NAME_COLORS.length]
+}
+
 interface ChatViewProps {
   onBack: () => void
   onOpenGames?: () => void
@@ -93,6 +117,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     clearChat,
     blockChat,
     unblockChat,
+    toggleReaction,
   } = useChatStore()
   const { currentUser } = useUserStore()
   const { t, language, isRTL } = useLanguage()
@@ -123,6 +148,12 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
 
   const chat = chats.find((c) => c.id === activeChatId)
   const chatMessages = messages[activeChatId || ''] || []
+
+  // Channel posting permissions
+  const isChannel = chat?.type === 'channel'
+  const isChannelAdmin = (chat?.admins?.includes(currentUser?.id || '')) ?? false
+  const canPost = !isChannel || isChannelAdmin
+  const channelInteractive = isChannel && chat?.channelMode === 'interactive'
 
   const BackIcon = isRTL ? ArrowRight : ArrowLeft
 
@@ -349,9 +380,27 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             <h3 className={cn('font-semibold truncate', isRTL && 'font-arabic')}>
               {isRTL ? chat.nameAr : chat.name}
             </h3>
-            <p className="text-xs text-muted-foreground">
-              {chat.isOnline ? t('chat.online') : t('chat.offline')}
-            </p>
+            {chat.type === 'channel' ? (
+              <p className={cn('text-xs text-muted-foreground truncate', isRTL && 'font-arabic')}>
+                {(() => {
+                  const count = chat.participants?.length ?? 0
+                  if (isRTL) return `${count} ${count === 1 ? 'مشترك' : 'مشترك'}`
+                  return `${count} ${count === 1 ? 'subscriber' : 'subscribers'}`
+                })()}
+              </p>
+            ) : chat.type === 'group' ? (
+              <p className={cn('text-xs text-muted-foreground truncate', isRTL && 'font-arabic')}>
+                {(() => {
+                  const count = chat.participants?.length ?? 0
+                  if (isRTL) return `${count} ${count === 1 ? 'عضو' : 'أعضاء'}`
+                  return `${count} ${count === 1 ? 'member' : 'members'}`
+                })()}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {chat.isOnline ? t('chat.online') : t('chat.offline')}
+              </p>
+            )}
           </div>
         </button>
 
@@ -479,10 +528,29 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
           <div className="space-y-4">
           {chatMessages.map((message, index) => {
             const isSent = message.senderId === currentUser?.id
+            const isGroup = chat.type === 'group'
             const showAvatar = !isSent && (
               index === 0 || chatMessages[index - 1]?.senderId !== message.senderId
             )
-            
+            // Show sender name in group bubbles when a new sender's run begins
+            const showSenderName = isGroup && !isSent && (
+              index === 0 || chatMessages[index - 1]?.senderId !== message.senderId
+            )
+
+            // System (join/leave/create) events: centered gray text
+            if (message.type === 'system') {
+              return (
+                <div key={message.id} className="flex justify-center py-1">
+                  <span className={cn(
+                    'text-[11px] text-muted-foreground bg-muted/60 backdrop-blur-sm px-3 py-1 rounded-full max-w-[80%] text-center',
+                    isRTL && 'font-arabic'
+                  )}>
+                    {message.content}
+                  </span>
+                </div>
+              )
+            }
+
             // Don't show deleted messages
             if (message.deletedForEveryone) {
               return (
@@ -522,6 +590,12 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   message={message}
                   isSent={isSent}
                   showAvatar={showAvatar}
+                  showSenderName={showSenderName}
+                  currentUserId={currentUser?.id}
+                  channelInteractive={channelInteractive}
+                  onToggleReaction={(emoji) =>
+                    chat && currentUser && toggleReaction(chat.id, message.id, emoji, currentUser.id)
+                  }
                   onLongPress={() => setSelectedMessage(message)}
                   onReply={() => setReplyingTo(message)}
                   onSwipeReply={() => setReplyingTo(message)}
@@ -563,7 +637,20 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         className="p-3 border-t bg-card/95 backdrop-blur-sm z-20 flex-shrink-0 w-full"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {isRecording ? (
+        {!canPost ? (
+          <div className={cn('flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+            <Megaphone className="h-4 w-4" />
+            <span>
+              {channelInteractive
+                ? isRTL
+                  ? 'يمكنك التفاعل فقط — النشر للمشرفين'
+                  : 'You can only react — admins post'
+                : isRTL
+                  ? 'النشر مقصور على المشرفين'
+                  : 'Only admins can post'}
+            </span>
+          </div>
+        ) : isRecording ? (
           <motion.div
             className="flex items-center gap-3"
             drag="x"
@@ -795,6 +882,10 @@ interface MessageBubbleProps {
   message: Message
   isSent: boolean
   showAvatar: boolean
+  showSenderName?: boolean
+  currentUserId?: string
+  channelInteractive?: boolean
+  onToggleReaction?: (emoji: string) => void
   onLongPress: () => void
   onReply: () => void
   onSwipeReply: () => void
@@ -802,7 +893,7 @@ interface MessageBubbleProps {
   chatMessages: Message[]
 }
 
-function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
+function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUserId, channelInteractive, onToggleReaction, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
   const { language, isRTL } = useLanguage()
   const longPressTimer = React.useRef<number | null>(null)
   const controls = useAnimation()
@@ -933,6 +1024,16 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
           )}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
+          {/* Sender name (groups, received messages only) */}
+          {showSenderName && (
+            <p
+              className={cn('mb-0.5 text-xs font-semibold leading-tight', isRTL && 'font-arabic')}
+              style={{ color: getMemberColor(message.senderId) }}
+            >
+              {message.senderName}
+            </p>
+          )}
+
           {/* Reply Preview */}
           {replyMessage && (
             <div className={cn(
@@ -1037,6 +1138,54 @@ function MessageBubble({ message, isSent, showAvatar, onLongPress, onSwipeReply,
               </span>
             )}
           </div>
+
+          {/* Reaction chips */}
+          {message.reactions && Object.keys(message.reactions).length > 0 && (
+            <div className={cn('flex flex-wrap gap-1 pt-1.5', isSent ? 'justify-end' : 'justify-start')}>
+              {Object.entries(message.reactions).map(([emoji, users]) => {
+                const reacted = !!currentUserId && users.includes(currentUserId)
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    disabled={!channelInteractive}
+                    onClick={() => onToggleReaction?.(emoji)}
+                    className={cn(
+                      'flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors',
+                      reacted ? 'bg-primary/20 ring-1 ring-primary/40' : 'bg-background/40',
+                      channelInteractive ? 'cursor-pointer hover:bg-background/70' : 'cursor-default',
+                    )}
+                  >
+                    <span>{emoji}</span>
+                    <span className="opacity-80">{users.length}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Quick react bar (interactive channels) */}
+          {channelInteractive && (
+            <div className={cn('flex gap-1 pt-1.5', isSent ? 'justify-end' : 'justify-start')}>
+              {['👍', '❤️', '🔥', '😂', '😮'].map((emoji) => {
+                const reacted = !!currentUserId && message.reactions?.[emoji]?.includes(currentUserId)
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => onToggleReaction?.(emoji)}
+                    className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-full text-sm transition-transform hover:scale-110 active:scale-95',
+                      reacted ? 'bg-primary/20' : 'bg-background/30',
+                    )}
+                    aria-label={`React ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
         )}
       </motion.div>

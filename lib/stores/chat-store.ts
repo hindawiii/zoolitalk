@@ -8,7 +8,9 @@ export interface Message {
   senderName: string
   senderAvatar: string
   content: string
-  type: 'text' | 'voice' | 'image' | 'sticker' | 'location' | 'video' | 'document'
+  type: 'text' | 'voice' | 'image' | 'sticker' | 'location' | 'video' | 'document' | 'system'
+  // System event (join/leave) for groups
+  systemEvent?: 'join' | 'leave' | 'create'
   voiceDuration?: number
   imageUrl?: string
   stickerUrl?: string
@@ -38,11 +40,15 @@ export interface Message {
   // Translation
   translatedContent?: string
   originalLanguage?: string
+  // Channel reactions (interactive channels): emoji -> list of userIds
+  reactions?: Record<string, string[]>
 }
 
 export interface Chat {
   id: string
-  type: 'private' | 'group'
+  type: 'private' | 'group' | 'channel'
+  // Channel posting mode: 'broadcast' = admins only, 'interactive' = members can react/comment
+  channelMode?: 'broadcast' | 'interactive'
   name: string
   nameAr: string
   avatar: string
@@ -125,6 +131,9 @@ interface ChatState {
   
   // Translation
   translateMessage: (chatId: string, messageId: string, translatedContent: string, originalLanguage: string) => void
+
+  // Channel reactions (interactive channels)
+  toggleReaction: (chatId: string, messageId: string, emoji: string, userId: string) => void
   
   // Games
   activeGame: string | null
@@ -158,6 +167,23 @@ const demoChats: Chat[] = [
       { id: 'user-1', name: 'Ahmed', avatar: '/avatars/ahmed.jpg', role: 'admin', isOnline: true },
       { id: 'user-2', name: 'Fatima', avatar: '/avatars/fatima.jpg', role: 'member', isOnline: true },
       { id: 'user-3', name: 'Omar', avatar: '/avatars/omar.jpg', role: 'moderator', isOnline: false },
+    ],
+  },
+  {
+    id: 'chat-channel-1',
+    type: 'channel',
+    channelMode: 'interactive',
+    name: 'Sudan News',
+    nameAr: 'أخبار السودان',
+    avatar: '',
+    lastMessage: 'تغطية مباشرة لأهم الأحداث',
+    lastMessageTime: new Date(Date.now() - 1000 * 60 * 20),
+    unreadCount: 3,
+    admins: ['user-1'],
+    participants: [
+      { id: 'user-1', name: 'Ahmed', avatar: '/avatars/ahmed.jpg', role: 'admin', isOnline: true },
+      { id: 'user-2', name: 'Fatima', avatar: '/avatars/fatima.jpg', role: 'member', isOnline: true },
+      { id: 'user-3', name: 'Omar', avatar: '/avatars/omar.jpg', role: 'member', isOnline: false },
     ],
   },
   {
@@ -397,6 +423,91 @@ const demoMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
+  'chat-2': [
+    {
+      id: 'gmsg-0',
+      chatId: 'chat-2',
+      senderId: 'system',
+      senderName: '',
+      senderAvatar: '',
+      content: 'أنشأ أحمد المجموعة "شلة الخرطوم"',
+      type: 'system',
+      systemEvent: 'create',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-1',
+      chatId: 'chat-2',
+      senderId: 'user-1',
+      senderName: 'Ahmed',
+      senderAvatar: '/avatars/ahmed.jpg',
+      content: 'السلام عليكم يا شباب، الجبنة الليلة عندي',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 50),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-2',
+      chatId: 'chat-2',
+      senderId: 'system',
+      senderName: '',
+      senderAvatar: '',
+      content: 'انضم عمر إلى المجموعة',
+      type: 'system',
+      systemEvent: 'join',
+      timestamp: new Date(Date.now() - 1000 * 60 * 45),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-3',
+      chatId: 'chat-2',
+      senderId: 'user-3',
+      senderName: 'Omar',
+      senderAvatar: '/avatars/omar.jpg',
+      content: 'وعليكم السلام، إن شاء الله نجي',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 40),
+      status: 'read',
+    },
+    {
+      id: 'gmsg-4',
+      chatId: 'chat-2',
+      senderId: 'user-2',
+      senderName: 'Fatima',
+      senderAvatar: '/avatars/fatima.jpg',
+      content: 'الجبنة جاهزة يا جماعة!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
+      status: 'delivered',
+    },
+  ],
+  'chat-channel-1': [
+    {
+      id: 'cmsg-1',
+      chatId: 'chat-channel-1',
+      senderId: 'user-1',
+      senderName: 'Ahmed',
+      senderAvatar: '/avatars/ahmed.jpg',
+      content: 'أهلاً بكم في قناة أخبار السودان. تابعونا لأهم المستجدات.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60),
+      status: 'read',
+      reactions: { '👍': ['user-2', 'user-3'], '❤️': ['user-2'] },
+    },
+    {
+      id: 'cmsg-2',
+      chatId: 'chat-channel-1',
+      senderId: 'user-1',
+      senderName: 'Ahmed',
+      senderAvatar: '/avatars/ahmed.jpg',
+      content: 'تغطية مباشرة لأهم الأحداث الليلة الساعة التاسعة.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1000 * 60 * 20),
+      status: 'read',
+      reactions: { '🔥': ['user-3'] },
+    },
+  ],
 }
 
 export const useChatStore = create<ChatState>()(
@@ -630,21 +741,69 @@ export const useChatStore = create<ChatState>()(
               msg.id === messageId
                 ? { ...msg, translatedContent, originalLanguage }
                 : msg
-            ),
+          ),
+        },
+      })),
+
+      // Channel reactions (interactive channels)
+      toggleReaction: (chatId, messageId, emoji, userId) =>
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [chatId]: (state.messages[chatId] || []).map((msg) => {
+              if (msg.id !== messageId) return msg
+              const reactions = { ...(msg.reactions || {}) }
+              const users = reactions[emoji] || []
+              if (users.includes(userId)) {
+                const next = users.filter((u) => u !== userId)
+                if (next.length === 0) {
+                  delete reactions[emoji]
+                } else {
+                  reactions[emoji] = next
+                }
+              } else {
+                reactions[emoji] = [...users, userId]
+              }
+              return { ...msg, reactions }
+            }),
           },
         })),
-      
+
       // Games
       activeGame: null,
       setActiveGame: (game) => set({ activeGame: game }),
     }),
     {
       name: 'rakobatna-chat-storage',
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         chats: state.chats,
         messages: state.messages,
       }),
+      // Ensure the group demo conversation is available for existing users too
+      merge: (persisted, current) => {
+        const p = (persisted as Partial<ChatState>) || {}
+        const mergedMessages = { ...current.messages, ...(p.messages || {}) }
+        if (!mergedMessages['chat-2'] || mergedMessages['chat-2'].length === 0) {
+          mergedMessages['chat-2'] = demoMessages['chat-2']
+        }
+        if (!mergedMessages['chat-channel-1'] || mergedMessages['chat-channel-1'].length === 0) {
+          mergedMessages['chat-channel-1'] = demoMessages['chat-channel-1']
+        }
+        // Ensure the demo channel chat exists in the chats list
+        const persistedChats = p.chats || current.chats
+        const hasChannel = persistedChats.some((c) => c.id === 'chat-channel-1')
+        const mergedChats = hasChannel
+          ? persistedChats
+          : [...persistedChats, current.chats.find((c) => c.id === 'chat-channel-1')!].filter(Boolean)
+        return {
+          ...current,
+          ...p,
+          chats: mergedChats,
+          messages: mergedMessages,
+        }
+      },
     }
   )
 )

@@ -68,6 +68,7 @@ export function NewChatSheet({ open, onClose }: NewChatSheetProps) {
   const [query, setQuery] = React.useState('')
   const [groupName, setGroupName] = React.useState('')
   const [selected, setSelected] = React.useState<string[]>([])
+  const [channelMode, setChannelMode] = React.useState<'broadcast' | 'interactive'>('broadcast')
 
   const ChevronIcon = isRTL ? ChevronLeft : ChevronRight
   const BackArrow = isRTL ? ArrowRight : ArrowLeft
@@ -79,6 +80,7 @@ export function NewChatSheet({ open, onClose }: NewChatSheetProps) {
       setQuery('')
       setGroupName('')
       setSelected([])
+      setChannelMode('broadcast')
     }
   }, [open])
 
@@ -125,11 +127,18 @@ export function NewChatSheet({ open, onClose }: NewChatSheetProps) {
 
     const newChat: Chat = {
       id: `chat-${isChannel ? 'channel' : 'group'}-${Date.now()}`,
-      type: 'group',
+      type: isChannel ? 'channel' : 'group',
+      ...(isChannel ? { channelMode } : {}),
       name,
       nameAr: name,
       avatar: '',
-      lastMessage: isRTL ? 'تم إنشاء المجموعة' : 'Group created',
+      lastMessage: isChannel
+        ? isRTL
+          ? 'تم إنشاء القناة'
+          : 'Channel created'
+        : isRTL
+          ? 'تم إنشاء المجموعة'
+          : 'Group created',
       lastMessageTime: new Date(),
       unreadCount: 0,
       admins: ['user-1'],
@@ -268,6 +277,52 @@ export function NewChatSheet({ open, onClose }: NewChatSheetProps) {
                     isRTL && 'text-right font-arabic',
                   )}
                 />
+              )}
+
+              {/* Channel interaction mode selector */}
+              {mode === 'channel' && (
+                <div className="space-y-2">
+                  <p className={cn('text-sm font-semibold text-[#2D5A27] dark:text-foreground', isRTL && 'font-arabic text-right')}>
+                    {isRTL ? 'طريقة التفاعل' : 'Interaction mode'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      {
+                        key: 'broadcast' as const,
+                        label: isRTL ? 'بث فقط' : 'Broadcast',
+                        desc: isRTL ? 'المشرف فقط ينشر' : 'Only admins post',
+                      },
+                      {
+                        key: 'interactive' as const,
+                        label: isRTL ? 'تفاعلي' : 'Interactive',
+                        desc: isRTL ? 'الأعضاء يتفاعلون ويعلقون' : 'Members react & comment',
+                      },
+                    ]).map((opt) => {
+                      const active = channelMode === opt.key
+                      return (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setChannelMode(opt.key)}
+                          className={cn(
+                            'rounded-2xl border-2 p-3 text-start transition-colors',
+                            active
+                              ? 'border-[#2D5A27] bg-[#2D5A27]/10'
+                              : 'border-transparent bg-white/70 dark:bg-card/60',
+                            isRTL && 'text-right',
+                          )}
+                        >
+                          <span className={cn('block font-bold text-[#2D5A27] dark:text-foreground', isRTL && 'font-arabic')}>
+                            {opt.label}
+                          </span>
+                          <span className={cn('block text-xs text-muted-foreground', isRTL && 'font-arabic')}>
+                            {opt.desc}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
 
               {/* Search */}
