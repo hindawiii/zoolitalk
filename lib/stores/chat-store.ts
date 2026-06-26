@@ -66,6 +66,7 @@ interface ChatState {
   // Chats list
   chats: Chat[]
   setChats: (chats: Chat[]) => void
+  addChat: (chat: Chat) => void
   
   // Active chat
   activeChatId: string | null
@@ -388,6 +389,12 @@ export const useChatStore = create<ChatState>()(
     (set, get) => ({
       chats: demoChats,
       setChats: (chats) => set({ chats }),
+      addChat: (chat) =>
+        set((state) =>
+          state.chats.some((c) => c.id === chat.id)
+            ? state
+            : { chats: [chat, ...state.chats] }
+        ),
       
       activeChatId: null,
       setActiveChatId: (activeChatId) => set({ activeChatId }),
