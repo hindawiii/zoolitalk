@@ -224,7 +224,7 @@
   
   /* Chat bubble styles */
   .chat-bubble {
-    @apply max-w-[80%];
+    @apply max-w-[80%] shadow-sm;
     padding: 12px;
     transition: all 0.3s ease;
   }
