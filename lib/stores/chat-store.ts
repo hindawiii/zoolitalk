@@ -12,6 +12,7 @@ export interface Message {
   // System event (join/leave) for groups
   systemEvent?: 'join' | 'leave' | 'create'
   voiceDuration?: number
+  voiceUrl?: string
   imageUrl?: string
   stickerUrl?: string
   // Video
