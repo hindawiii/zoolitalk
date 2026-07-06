@@ -44,7 +44,12 @@ import {
   Users,
   Link2,
   Music,
-  PhoneCall,
+  MicOff,
+  MonitorUp,
+  Volume2,
+  Minimize2,
+  VideoOff,
+  UserPlus,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -130,7 +135,6 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     unblockChat,
     toggleReaction,
     typingUsers,
-    setTyping,
     markChatRead,
     addChannelComment,
   } = useChatStore()
@@ -274,29 +278,6 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     return () => vp.removeEventListener('scroll', handleScroll)
   }, [getViewport, hasOlderMessages, isLoadingOlder])
 
-  // Demo-only: occasionally show the other participant "typing" in the open
-  // private chat so the header typing indicator is observable. Each burst
-  // clears itself after ~3 seconds.
-  React.useEffect(() => {
-    if (!activeChatId || chat?.type !== 'private') return
-    const peerId = `peer-${activeChatId}`
-    let clearTimer: number | undefined
-
-    const startTyping = () => {
-      setTyping(activeChatId, peerId, true)
-      clearTimer = window.setTimeout(() => {
-        setTyping(activeChatId, peerId, false)
-      }, 3000)
-    }
-
-    const interval = window.setInterval(startTyping, 12000)
-    return () => {
-      window.clearInterval(interval)
-      if (clearTimer) window.clearTimeout(clearTimer)
-      setTyping(activeChatId, peerId, false)
-    }
-  }, [activeChatId, chat?.type, setTyping])
-
   // Recording timer — runs only while actively capturing (paused in preview)
   React.useEffect(() => {
     if (isRecording && !recordedAudio) {
@@ -325,7 +306,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const formatDateLabel = (date: Date) => {
     const d = new Date(date)
     if (isToday(d)) return isRTL ? 'اليوم' : 'Today'
-    if (isYesterday(d)) return isRTL ? 'أمس' : 'Yesterday'
+    if (isYesterday(d)) return isRTL ? '��مس' : 'Yesterday'
     return format(d, 'PPP', { locale: language === 'ar' ? ar : enUS })
   }
 
@@ -1312,11 +1293,12 @@ function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUse
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         animate={controls}
+        dir="ltr"
         className={cn(
           'flex items-end gap-2',
-          // WhatsApp-style physical layout (independent of RTL):
-          // own messages on the LEFT, received messages on the RIGHT.
-          isSent ? 'justify-start flex-row' : 'justify-end flex-row-reverse',
+          // WhatsApp-style RTL layout: own (sent) messages on the RIGHT,
+          // received messages on the LEFT with the sender avatar.
+          isSent ? 'justify-end flex-row' : 'justify-start flex-row',
         )}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -1928,6 +1910,10 @@ function CallSheet({
   const { isRTL } = useLanguage()
   const [seconds, setSeconds] = React.useState(0)
   const [connecting, setConnecting] = React.useState(true)
+  const [muted, setMuted] = React.useState(false)
+  const [speaker, setSpeaker] = React.useState(type === 'video')
+  const [isVideo, setIsVideo] = React.useState(type === 'video')
+  const [sharing, setSharing] = React.useState(false)
 
   React.useEffect(() => {
     const connectTimer = window.setTimeout(() => setConnecting(false), 2500)
@@ -1943,64 +1929,146 @@ function CallSheet({
   const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
 
   const status = connecting
-    ? type === 'video'
+    ? isVideo
       ? isRTL ? 'جاري بدء مكالمة فيديو...' : 'Starting video call...'
       : isRTL ? 'جاري الاتصال...' : 'Calling...'
-    : fmt(seconds)
+    : sharing
+      ? isRTL ? 'يشارك الشاشة' : 'Sharing screen'
+      : fmt(seconds)
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] bg-black/50"
-      onClick={onClose}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+      className="fixed inset-0 z-[70] mx-auto flex w-full max-w-md flex-col bg-[#1B3A17] text-white"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[#2D5A27] p-6 pb-10 text-white"
-        onClick={(e) => e.stopPropagation()}
-        dir={isRTL ? 'rtl' : 'ltr'}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <Avatar className="h-20 w-20 border-2 border-white/40">
-            <AvatarImage src={avatar} alt={name} />
-            <AvatarFallback className="bg-white/20 text-white text-xl">{name[0]}</AvatarFallback>
-          </Avatar>
-          <div className="text-center">
-            <h3 className={cn('text-lg font-bold', isRTL && 'font-arabic')}>{name}</h3>
-            <p className={cn('mt-1 flex items-center justify-center gap-2 text-sm text-white/80', isRTL && 'font-arabic')}>
-              {connecting && (
-                <span className="flex gap-1">
-                  <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" />
-                  <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: '0.2s' }} />
-                  <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: '0.4s' }} />
-                </span>
-              )}
-              {status}
-            </p>
-          </div>
-          <div className="mt-2 flex items-center gap-6">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15">
-              {type === 'video' ? <Video className="h-5 w-5" /> : <PhoneCall className="h-5 w-5" />}
-            </span>
-            <button
-              onClick={onClose}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive shadow-lg transition-transform active:scale-95"
-              aria-label={isRTL ? 'إنهاء المكالمة' : 'End call'}
-            >
-              <Phone className="h-6 w-6 rotate-[135deg]" />
-            </button>
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15">
-              <Mic className="h-5 w-5" />
-            </span>
+      {/* Video preview backdrop (when video is active) */}
+      {isVideo && (
+        <div className="absolute inset-0 bg-gradient-to-b from-[#24491f] via-[#1B3A17] to-[#0f2410]">
+          {/* Self preview */}
+          <div className="absolute bottom-28 h-40 w-28 overflow-hidden rounded-2xl border border-white/20 bg-black/40 shadow-lg end-4">
+            <div className="flex h-full w-full items-center justify-center text-white/40">
+              <Video className="h-8 w-8" />
+            </div>
           </div>
         </div>
-      </motion.div>
+      )}
+
+      {/* Top bar */}
+      <div
+        className="relative z-10 flex items-center justify-between px-4 pt-5"
+        style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0))' }}
+      >
+        <button
+          onClick={onClose}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur transition-transform active:scale-95"
+          aria-label={isRTL ? 'العودة للمحادثة' : 'Back to chat'}
+        >
+          <Minimize2 className="h-5 w-5" />
+        </button>
+        <span className={cn('text-sm text-white/70', isRTL && 'font-arabic')}>
+          {isVideo ? (isRTL ? 'مكالمة فيديو' : 'Video call') : (isRTL ? 'مكالمة صوتية' : 'Voice call')}
+        </span>
+        <span className="h-10 w-10" />
+      </div>
+
+      {/* Center: caller identity */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4 px-6">
+        <Avatar className="h-28 w-28 border-2 border-white/30 shadow-xl">
+          <AvatarImage src={avatar} alt={name} />
+          <AvatarFallback className="bg-white/20 text-3xl text-white">{name[0]}</AvatarFallback>
+        </Avatar>
+        <h3 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>{name}</h3>
+        <p className={cn('flex items-center justify-center gap-2 text-sm text-white/80', isRTL && 'font-arabic')}>
+          {connecting && (
+            <span className="flex gap-1">
+              <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" />
+              <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: '0.2s' }} />
+              <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: '0.4s' }} />
+            </span>
+          )}
+          {status}
+        </p>
+      </div>
+
+      {/* Controls */}
+      <div
+        className="relative z-10 px-6 pb-8"
+        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0))' }}
+      >
+        {/* Secondary controls row */}
+        <div className="mb-5 flex items-center justify-center gap-4">
+          <CallControl
+            icon={muted ? MicOff : Mic}
+            label={isRTL ? 'كتم' : 'Mute'}
+            active={muted}
+            onClick={() => setMuted((m) => !m)}
+          />
+          <CallControl
+            icon={isVideo ? VideoOff : Video}
+            label={isVideo ? (isRTL ? 'إيقاف الفيديو' : 'Stop video') : (isRTL ? 'تحويل لفيديو' : 'Switch to video')}
+            active={isVideo}
+            onClick={() => setIsVideo((v) => !v)}
+          />
+          <CallControl
+            icon={MonitorUp}
+            label={isRTL ? 'مشاركة الشاشة' : 'Share screen'}
+            active={sharing}
+            onClick={() => setSharing((s) => !s)}
+          />
+          <CallControl
+            icon={Volume2}
+            label={isRTL ? 'مكبر الصوت' : 'Speaker'}
+            active={speaker}
+            onClick={() => setSpeaker((s) => !s)}
+          />
+        </div>
+
+        {/* Primary controls row */}
+        <div className="flex items-center justify-center gap-10">
+          <CallControl icon={UserPlus} label={isRTL ? 'إضافة' : 'Add'} onClick={() => {}} />
+          <button
+            onClick={onClose}
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive shadow-lg transition-transform active:scale-95"
+            aria-label={isRTL ? 'إنهاء المكالمة' : 'End call'}
+          >
+            <Phone className="h-7 w-7 rotate-[135deg]" />
+          </button>
+          <CallControl icon={MessageSquare} label={isRTL ? 'رسالة' : 'Message'} onClick={onClose} />
+        </div>
+      </div>
     </motion.div>
+  )
+}
+
+function CallControl({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  onClick: () => void
+  active?: boolean
+}) {
+  const { isRTL } = useLanguage()
+  return (
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5" aria-label={label}>
+      <span
+        className={cn(
+          'flex h-13 w-13 items-center justify-center rounded-full transition-colors',
+          active ? 'bg-white text-[#1B3A17]' : 'bg-white/15 text-white',
+        )}
+        style={{ height: '3.25rem', width: '3.25rem' }}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className={cn('text-[11px] text-white/80', isRTL && 'font-arabic')}>{label}</span>
+    </button>
   )
 }
 
@@ -2069,32 +2137,35 @@ function ProfileSheet({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] bg-black/50"
-      onClick={onClose}
+      initial={{ opacity: 0, x: isRTL ? '-100%' : '100%' }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: isRTL ? '-100%' : '100%' }}
+      transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+      className="fixed inset-0 z-[60] mx-auto flex w-full max-w-md flex-col bg-card"
+      onClick={(e) => e.stopPropagation()}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-3xl bg-card"
-        onClick={(e) => e.stopPropagation()}
-        dir={isRTL ? 'rtl' : 'ltr'}
+      {/* Header */}
+      <div
+        className="relative flex flex-col items-center gap-2 border-b px-4 pb-5 pt-6"
+        style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0))' }}
       >
-        {/* Header */}
-        <div className="relative flex flex-col items-center gap-2 border-b px-4 pb-4 pt-6">
-          <Button variant="ghost" size="icon" className="absolute end-3 top-3" onClick={onClose} aria-label={isRTL ? 'إغلاق' : 'Close'}>
-            <X className="h-5 w-5" />
-          </Button>
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={chat.avatar} alt={name} />
-            <AvatarFallback className="text-xl">{name[0]}</AvatarFallback>
-          </Avatar>
-          <h3 className={cn('text-lg font-bold', isRTL && 'font-arabic')}>{name}</h3>
-          <p className={cn('text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute start-3 top-3"
+          style={{ top: 'calc(0.75rem + env(safe-area-inset-top, 0))' }}
+          onClick={onClose}
+          aria-label={isRTL ? 'رجوع' : 'Back'}
+        >
+          {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+        </Button>
+        <Avatar className="h-24 w-24">
+          <AvatarImage src={chat.avatar} alt={name} />
+          <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
+        </Avatar>
+        <h3 className={cn('text-xl font-bold', isRTL && 'font-arabic')}>{name}</h3>
+        <p className={cn('text-sm text-muted-foreground', isRTL && 'font-arabic')}>
             {chat.isOnline ? (isRTL ? 'متصل الآن' : 'Online') : (isRTL ? 'آخر ظهور قريباً' : 'Last seen recently')}
           </p>
         </div>
@@ -2233,7 +2304,6 @@ function ProfileSheet({
             {isRTL ? 'البحث في الرسائل' : 'Search in messages'}
           </button>
         </div>
-      </motion.div>
     </motion.div>
   )
 }
