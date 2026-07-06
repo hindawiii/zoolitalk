@@ -60,7 +60,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { useChatStore, type Message, type ChannelComment } from '@/lib/stores/chat-store'
+import { useChatStore, type Message } from '@/lib/stores/chat-store'
 import { useUserStore } from '@/lib/stores/user-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
@@ -124,6 +124,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     unblockChat,
     toggleReaction,
     typingUsers,
+    setTyping,
     markChatRead,
     addChannelComment,
   } = useChatStore()
@@ -256,6 +257,29 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     vp.addEventListener('scroll', handleScroll, { passive: true })
     return () => vp.removeEventListener('scroll', handleScroll)
   }, [getViewport, hasOlderMessages, isLoadingOlder])
+
+  // Demo-only: occasionally show the other participant "typing" in the open
+  // private chat so the header typing indicator is observable. Each burst
+  // clears itself after ~3 seconds.
+  React.useEffect(() => {
+    if (!activeChatId || chat?.type !== 'private') return
+    const peerId = `peer-${activeChatId}`
+    let clearTimer: number | undefined
+
+    const startTyping = () => {
+      setTyping(activeChatId, peerId, true)
+      clearTimer = window.setTimeout(() => {
+        setTyping(activeChatId, peerId, false)
+      }, 3000)
+    }
+
+    const interval = window.setInterval(startTyping, 12000)
+    return () => {
+      window.clearInterval(interval)
+      if (clearTimer) window.clearTimeout(clearTimer)
+      setTyping(activeChatId, peerId, false)
+    }
+  }, [activeChatId, chat?.type, setTyping])
 
   // Recording timer
   React.useEffect(() => {
@@ -511,7 +535,18 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             <h3 className={cn('font-semibold truncate', isRTL && 'font-arabic')}>
               {isRTL ? chat.nameAr : chat.name}
             </h3>
-            {chat.type === 'channel' ? (
+            {othersTyping.length > 0 ? (
+              <div className={cn('flex items-center gap-1.5', isRTL && 'flex-row-reverse')}>
+                <span className={cn('text-xs text-muted-foreground', isRTL && 'font-arabic')}>
+                  {isRTL ? 'جاري الكتابة' : 'typing'}
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className="typing-dot h-1 w-1 rounded-full bg-muted-foreground" />
+                  <span className="typing-dot h-1 w-1 rounded-full bg-muted-foreground" style={{ animationDelay: '0.2s' }} />
+                  <span className="typing-dot h-1 w-1 rounded-full bg-muted-foreground" style={{ animationDelay: '0.4s' }} />
+                </span>
+              </div>
+            ) : chat.type === 'channel' ? (
               <p className={cn('text-xs text-muted-foreground truncate', isRTL && 'font-arabic')}>
                 {(() => {
                   const count = chat.participants?.length ?? 0
@@ -660,7 +695,12 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
           {/* Loading older messages spinner (pagination) */}
           {isLoadingOlder && (
             <div className="flex justify-center py-2">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="flex items-center gap-2 rounded-full bg-card/80 px-3 py-1 shadow-sm backdrop-blur-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-green-700" />
+                <span className={cn('text-xs text-green-700', isRTL && 'font-arabic')}>
+                  {isRTL ? 'جاري تحميل الرسائل القديمة...' : 'Loading older messages...'}
+                </span>
+              </span>
             </div>
           )}
           {visibleMessages.map((message, index) => {
@@ -730,6 +770,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                   showSenderName={showSenderName}
                   currentUserId={currentUser?.id}
                   channelInteractive={channelInteractive}
+                  showCommentsButton={channelInteractive && (chat.admins?.includes(message.senderId) ?? false)}
                   onToggleReaction={(emoji) =>
                     chat && currentUser && toggleReaction(chat.id, message.id, emoji, currentUser.id)
                   }
@@ -817,7 +858,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               variant="ghost"
               size="icon"
               className={cn(
-                'h-10 w-10 flex-shrink-0 rounded-full text-muted-foreground transition-transform',
+                'h-12 w-12 flex-shrink-0 rounded-full text-muted-foreground transition-all duration-300',
                 showAttachments && 'bg-secondary rotate-45 text-primary'
               )}
               onClick={() => {
@@ -830,7 +871,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             </Button>
 
             {/* Multiline message field with emoji button inside */}
-            <div className="flex flex-1 items-end gap-1 rounded-3xl bg-secondary/50 px-3 py-1.5">
+            <div className="flex min-h-12 flex-1 items-center gap-1 rounded-3xl bg-secondary/40 px-3 py-1.5">
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -863,9 +904,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             {inputValue.trim() ? (
               <Button
                 size="icon"
-                className="flex-shrink-0 rounded-full bg-green-700 text-white hover:bg-green-800"
+                className="h-12 w-12 flex-shrink-0 rounded-full bg-green-700 text-white transition-all duration-300 hover:bg-green-800"
                 onClick={handleSend}
-                aria-label={isRTL ? 'إ��سال' : 'Send'}
+                aria-label={isRTL ? 'إرسال' : 'Send'}
               >
                 <Send className={cn('h-5 w-5', isRTL && 'rotate-180')} />
               </Button>
@@ -875,7 +916,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                 <Button
                   size="icon"
                   variant={isListening ? 'default' : 'ghost'}
-                  className={cn('flex-shrink-0 rounded-full', isListening && 'recording-pulse')}
+                  className={cn('h-12 w-12 flex-shrink-0 rounded-full transition-all duration-300', isListening && 'recording-pulse')}
                   onClick={startSpeechToText}
                   aria-label={isRTL ? 'تسجيل صوتي' : 'Voice'}
                 >
@@ -956,6 +997,17 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         )}
       </AnimatePresence>
 
+      {/* Channel Comments Sheet (interactive channels) */}
+      <AnimatePresence>
+        {commentsTarget && activeChatId && (
+          <ChannelCommentsSheet
+            chatId={activeChatId}
+            messageId={commentsTarget.id}
+            onClose={() => setCommentsTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Wallpaper Picker Sheet */}
       <AnimatePresence>
         {showWallpaperPicker && (
@@ -1021,7 +1073,9 @@ interface MessageBubbleProps {
   showSenderName?: boolean
   currentUserId?: string
   channelInteractive?: boolean
+  showCommentsButton?: boolean
   onToggleReaction?: (emoji: string) => void
+  onOpenComments?: () => void
   onLongPress: () => void
   onReply: () => void
   onSwipeReply: () => void
@@ -1029,7 +1083,7 @@ interface MessageBubbleProps {
   chatMessages: Message[]
 }
 
-function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUserId, channelInteractive, onToggleReaction, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
+function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUserId, channelInteractive, showCommentsButton, onToggleReaction, onOpenComments, onLongPress, onSwipeReply, onOpenImage, chatMessages }: MessageBubbleProps) {
   const { language, isRTL } = useLanguage()
   const longPressTimer = React.useRef<number | null>(null)
   const controls = useAnimation()
@@ -1132,7 +1186,7 @@ function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUse
 
         {/* Sticker: large image, no bubble */}
         {message.type === 'sticker' ? (
-          <div className="flex flex-col gap-1">
+          <div className="message-in flex flex-col gap-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={message.stickerUrl || message.imageUrl || '/placeholder.svg'}
@@ -1153,7 +1207,7 @@ function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUse
         /* Bubble */
         <div
           className={cn(
-            'chat-bubble',
+            'chat-bubble message-in',
             isSent ? 'chat-bubble-sent' : 'chat-bubble-received',
             (message.type === 'image' || message.type === 'video') && 'overflow-hidden p-1',
             isRTL && 'text-right'
@@ -1320,6 +1374,26 @@ function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUse
                   </button>
                 )
               })}
+            </div>
+          )}
+
+          {/* Comments button (channels — admin posts) */}
+          {showCommentsButton && (
+            <div className={cn('pt-1.5', isSent ? 'flex justify-end' : 'flex justify-start')}>
+              <button
+                type="button"
+                onClick={onOpenComments}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full bg-background/40 px-3 py-1 text-xs transition-colors hover:bg-background/70',
+                  isRTL && 'flex-row-reverse font-arabic',
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span>{isRTL ? 'تعليقات' : 'Comments'}</span>
+                {message.comments && message.comments.length > 0 && (
+                  <span className="opacity-80">{message.comments.length}</span>
+                )}
+              </button>
             </div>
           )}
         </div>
@@ -1550,5 +1624,135 @@ function DeleteMessageDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+// Channel Comments Sheet (interactive channels)
+function ChannelCommentsSheet({
+  chatId,
+  messageId,
+  onClose,
+}: {
+  chatId: string
+  messageId: string
+  onClose: () => void
+}) {
+  const { language, isRTL } = useLanguage()
+  const { messages, addChannelComment } = useChatStore()
+  const { currentUser } = useUserStore()
+  const [value, setValue] = React.useState('')
+  const listEndRef = React.useRef<HTMLDivElement>(null)
+
+  // Read the live message so newly added comments render immediately.
+  const message = (messages[chatId] || []).find((m) => m.id === messageId)
+  const comments = message?.comments || []
+
+  React.useEffect(() => {
+    listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [comments.length])
+
+  const handleAdd = () => {
+    const text = value.trim()
+    if (!text || !currentUser) return
+    addChannelComment(chatId, messageId, {
+      id: `comment-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
+      content: text,
+      timestamp: new Date(),
+    })
+    setValue('')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as any).isComposing && e.keyCode !== 229) {
+      e.preventDefault()
+      handleAdd()
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/50"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="absolute inset-x-0 bottom-0 flex max-h-[75vh] flex-col rounded-t-2xl bg-card"
+        onClick={(e) => e.stopPropagation()}
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h3 className={cn('text-base font-semibold', isRTL && 'font-arabic')}>
+            {isRTL ? `التعليقات (${comments.length})` : `Comments (${comments.length})`}
+          </h3>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Comments list */}
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          {comments.length === 0 ? (
+            <div className={cn('py-10 text-center text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+              {isRTL ? 'لا توجد تعليقات بعد. كن أول من يعلّق!' : 'No comments yet. Be the first!'}
+            </div>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className={cn('flex gap-2', isRTL && 'flex-row-reverse')}>
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={comment.userAvatar} alt={comment.userName} />
+                  <AvatarFallback>{comment.userName[0]}</AvatarFallback>
+                </Avatar>
+                <div className={cn('min-w-0 flex-1 rounded-2xl bg-secondary/50 px-3 py-2', isRTL && 'text-right')}>
+                  <div className={cn('flex items-baseline gap-2', isRTL && 'flex-row-reverse')}>
+                    <span className={cn('text-sm font-semibold', isRTL && 'font-arabic')}>{comment.userName}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {format(new Date(comment.timestamp), 'p', { locale: language === 'ar' ? ar : enUS })}
+                    </span>
+                  </div>
+                  <p className={cn('mt-0.5 break-words text-sm leading-relaxed', isRTL && 'font-arabic')}>
+                    {comment.content}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={listEndRef} />
+        </div>
+
+        {/* Add comment */}
+        <div className="flex items-end gap-2 border-t p-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0))' }}>
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            placeholder={isRTL ? 'أضف تعليقًا...' : 'Add a comment...'}
+            className={cn(
+              'max-h-24 min-h-12 flex-1 resize-none rounded-3xl bg-secondary/40 px-4 py-3 text-sm leading-relaxed outline-none placeholder:text-muted-foreground',
+              isRTL && 'font-arabic text-right',
+            )}
+          />
+          <Button
+            size="icon"
+            className="h-12 w-12 flex-shrink-0 rounded-full bg-green-700 text-white transition-all duration-300 hover:bg-green-800 disabled:opacity-50"
+            onClick={handleAdd}
+            disabled={!value.trim()}
+            aria-label={isRTL ? 'إرسال التعليق' : 'Send comment'}
+          >
+            <Send className={cn('h-5 w-5', isRTL && 'rotate-180')} />
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }
