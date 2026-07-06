@@ -236,7 +236,9 @@
   }
   
   .chat-bubble-received {
-    @apply bg-secondary text-secondary-foreground;
+    background-color: #FBF8EF;
+    color: #2D5A27;
+    border: 1px solid rgba(45, 90, 39, 0.12);
     border-radius: 16px 16px 16px 4px;
   }
 

@@ -157,6 +157,16 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const [isLoadingOlder, setIsLoadingOlder] = React.useState(false)
   // Channel comments sheet target (interactive channels)
   const [commentsTarget, setCommentsTarget] = React.useState<Message | null>(null)
+  // Friend profile bottom sheet (opened from the header)
+  const [showProfile, setShowProfile] = React.useState(false)
+  // In-conversation message search screen
+  const [showMessageSearch, setShowMessageSearch] = React.useState(false)
+  // Active call bottom sheet ('voice' | 'video' | null)
+  const [callType, setCallType] = React.useState<'voice' | 'video' | null>(null)
+  // Voice recording preview (blob URL) shown before sending
+  const [recordedAudio, setRecordedAudio] = React.useState<string | null>(null)
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = React.useRef<Blob[]>([])
 
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
@@ -342,12 +352,44 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     }
   }
 
-  // Voice recording handlers
-  const startRecording = () => {
-    setRecording(true)
+  // Voice recording handlers (real MediaRecorder with preview before sending)
+  const startRecording = async () => {
+    setRecordedAudio(null)
+    recordedChunksRef.current = []
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop())
+        if (recordedChunksRef.current.length > 0) {
+          const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' })
+          setRecordedAudio(URL.createObjectURL(blob))
+        }
+      }
+      mediaRecorderRef.current = recorder
+      recorder.start()
+      setRecordingDuration(0)
+      setRecording(true)
+    } catch {
+      alert(isRTL ? 'لا يمكن الوصول للميكروفون' : 'Cannot access microphone')
+    }
+  }
+
+  // Stop capturing so the recorded clip can be previewed before sending.
+  const stopRecordingForPreview = () => {
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') recorder.stop()
   }
 
   const cancelRecording = () => {
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') recorder.stop()
+    mediaRecorderRef.current = null
+    recordedChunksRef.current = []
+    setRecordedAudio(null)
     setRecording(false)
   }
 
@@ -363,11 +405,15 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
       content: '',
       type: 'voice',
       voiceDuration: recordingDuration,
+      voiceUrl: recordedAudio ?? undefined,
       timestamp: new Date(),
       status: 'sending',
     }
 
     addMessage(activeChatId, newMessage)
+    mediaRecorderRef.current = null
+    recordedChunksRef.current = []
+    setRecordedAudio(null)
     setRecording(false)
   }
 
@@ -376,6 +422,27 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     if (isRTL ? info.offset.x > 100 : info.offset.x < -100) {
       cancelRecording()
     }
+  }
+
+  // Mic button: short tap = speech-to-text, long-press = record a voice note.
+  const micPressTimer = React.useRef<number | null>(null)
+  const micLongPressed = React.useRef(false)
+  const handleMicDown = () => {
+    micLongPressed.current = false
+    micPressTimer.current = window.setTimeout(() => {
+      micLongPressed.current = true
+      startRecording()
+    }, 350)
+  }
+  const handleMicUp = () => {
+    if (micPressTimer.current) window.clearTimeout(micPressTimer.current)
+  }
+  const handleMicClick = () => {
+    if (micLongPressed.current) {
+      micLongPressed.current = false
+      return
+    }
+    startSpeechToText()
   }
 
   // Speech-to-text handler
@@ -583,11 +650,15 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                 <MoreVertical className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-52" dir={isRTL ? 'rtl' : 'ltr'}>
+            <DropdownMenuContent
+              align={isRTL ? 'start' : 'end'}
+              className="w-48 rounded-2xl border-border/50 bg-card/85 p-1 backdrop-blur-xl"
+              dir={isRTL ? 'rtl' : 'ltr'}
+            >
               {/* Chat info */}
               <DropdownMenuItem
                 onClick={() => setShowChatInfo(true)}
-                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
               >
                 <Info className="h-4 w-4" />
                 <span className={cn(isRTL && 'font-arabic')}>
@@ -596,61 +667,51 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               </DropdownMenuItem>
 
               {/* Pin/Unpin */}
-              <DropdownMenuItem 
-                onClick={() => chat.isPinned ? unpinChat(chat.id) : pinChat(chat.id)}
-                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+              <DropdownMenuItem
+                onClick={() => (chat.isPinned ? unpinChat(chat.id) : pinChat(chat.id))}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
               >
                 {chat.isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                 <span className={cn(isRTL && 'font-arabic')}>
                   {chat.isPinned ? (isRTL ? 'إلغاء التثبيت' : 'Unpin') : (isRTL ? 'تثبيت' : 'Pin')}
                 </span>
               </DropdownMenuItem>
-              
+
               {/* Mute/Unmute */}
-              <DropdownMenuItem 
-                onClick={() => chat.isMuted ? unmuteChat(chat.id) : muteChat(chat.id)}
-                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+              <DropdownMenuItem
+                onClick={() => (chat.isMuted ? unmuteChat(chat.id) : muteChat(chat.id))}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
               >
                 {chat.isMuted ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
                 <span className={cn(isRTL && 'font-arabic')}>
-                  {chat.isMuted ? (isRTL ? 'إلغاء الكتم' : 'Unmute') : t('chat.mute')}
+                  {chat.isMuted ? (isRTL ? 'إلغاء الكتم' : 'Unmute') : (isRTL ? 'كتم' : 'Mute')}
                 </span>
               </DropdownMenuItem>
-              
+
               {/* Archive */}
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => archiveChat(chat.id)}
-                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
               >
                 <Archive className="h-4 w-4" />
                 <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'أرشفة' : 'Archive'}</span>
               </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
+
               {/* Games */}
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={onOpenGames}
-                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
               >
                 <Gamepad2 className="h-4 w-4" />
                 <span className={cn(isRTL && 'font-arabic')}>{isRTL ? 'الألعاب' : 'Games'}</span>
               </DropdownMenuItem>
-              
-              {chat.type === 'group' && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className={cn(isRTL && 'font-arabic')}>{t('chat.kick')}</DropdownMenuItem>
-                  <DropdownMenuItem className={cn(isRTL && 'font-arabic')}>{t('chat.promote')}</DropdownMenuItem>
-                </>
-              )}
 
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="my-1" />
 
               {/* Clear conversation */}
               <DropdownMenuItem
                 onClick={() => setShowClearDialog(true)}
-                className={cn('gap-3', isRTL && 'flex-row-reverse')}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
               >
                 <Trash2 className="h-4 w-4" />
                 <span className={cn(isRTL && 'font-arabic')}>
@@ -662,7 +723,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               {chat.type === 'private' && (
                 <DropdownMenuItem
                   onClick={() => (chat.isBlocked ? unblockChat(chat.id) : setShowBlockDialog(true))}
-                  className={cn('gap-3', isRTL && 'flex-row-reverse')}
+                  className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]', isRTL && 'flex-row-reverse')}
                 >
                   <Ban className="h-4 w-4" />
                   <span className={cn(isRTL && 'font-arabic')}>
@@ -676,7 +737,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
               {/* Report */}
               <DropdownMenuItem
                 onClick={() => setShowReportDialog(true)}
-                className={cn('text-destructive gap-3', isRTL && 'flex-row-reverse')}
+                className={cn('gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-destructive focus:text-destructive', isRTL && 'flex-row-reverse')}
               >
                 <Flag className="h-4 w-4" />
                 <span className={cn(isRTL && 'font-arabic')}>
@@ -1157,14 +1218,11 @@ function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUse
         onDragEnd={handleDragEnd}
         animate={controls}
         className={cn(
-          'flex gap-2',
-          // In RTL: sent messages should justify-end (right), received justify-start (left)
-          // In LTR: sent messages should justify-end (right), received justify-start (left)
-          isSent ? 'justify-end' : 'justify-start',
-          // Flex direction for avatar positioning
-          isSent ? 'flex-row-reverse' : 'flex-row'
+          'flex items-end gap-2',
+          // WhatsApp-style physical layout (independent of RTL):
+          // own messages on the LEFT, received messages on the RIGHT.
+          isSent ? 'justify-start flex-row' : 'justify-end flex-row-reverse',
         )}
-        dir={isRTL ? 'rtl' : 'ltr'}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onContextMenu={(e) => {
@@ -1495,12 +1553,12 @@ function MessageContextMenu({ message, onClose, onReply, onDeleteForMe, onDelete
   }
 
   const actions = [
-    { icon: Reply, label: t('chat.reply'), onClick: onReply },
-    { icon: Forward, label: t('chat.forward'), onClick: () => {} },
-    { icon: Copy, label: t('chat.copy'), onClick: () => navigator.clipboard.writeText(message.content) },
+    { icon: Reply, label: isRTL ? 'رد' : 'Reply', onClick: onReply },
+    { icon: Copy, label: isRTL ? 'نسخ' : 'Copy', onClick: () => navigator.clipboard.writeText(message.content) },
+    { icon: Forward, label: isRTL ? 'تحويل' : 'Forward', onClick: () => {} },
     { icon: Languages, label: isRTL ? 'ترجمة' : 'Translate', onClick: handleTranslate },
     ...(isSent ? [
-      { icon: Edit2, label: t('chat.edit'), onClick: () => {} },
+      { icon: Edit2, label: isRTL ? 'تعديل' : 'Edit', onClick: () => {} },
     ] : []),
   ]
 
@@ -1513,11 +1571,12 @@ function MessageContextMenu({ message, onClose, onReply, onDeleteForMe, onDelete
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        exit={{ scale: 0.9 }}
-        className="bg-card rounded-xl p-2 min-w-[200px] shadow-xl"
+        initial={{ scale: 0.92, opacity: 0.6 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.92, opacity: 0 }}
+        className="min-w-[190px] space-y-0.5 rounded-2xl border border-border/40 bg-card/80 p-2 shadow-xl backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
         {actions.map((action, index) => (
           <button
@@ -1527,42 +1586,42 @@ function MessageContextMenu({ message, onClose, onReply, onDeleteForMe, onDelete
               onClose()
             }}
             className={cn(
-              'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-              'hover:bg-secondary',
+              'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors',
+              'hover:bg-secondary/70',
               isRTL && 'flex-row-reverse'
             )}
           >
-            <action.icon className="h-5 w-5" />
+            <action.icon className="h-4 w-4 flex-shrink-0" />
             <span className={cn(isRTL && 'font-arabic')}>{action.label}</span>
           </button>
         ))}
-        
+
         {/* Delete options */}
-        <div className="border-t mt-1 pt-1">
+        <div className="mt-1 border-t border-border/40 pt-1">
           <button
             onClick={() => onDeleteForMe(message)}
             className={cn(
-              'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-              'hover:bg-secondary text-muted-foreground',
+              'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors',
+              'text-muted-foreground hover:bg-secondary/70',
               isRTL && 'flex-row-reverse'
             )}
           >
-            <Trash2 className="h-5 w-5" />
+            <Trash2 className="h-4 w-4 flex-shrink-0" />
             <span className={cn(isRTL && 'font-arabic')}>
               {isRTL ? 'حذف لي' : 'Delete for me'}
             </span>
           </button>
-          
+
           {isSent && (
             <button
               onClick={() => onDeleteForEveryone(message)}
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-                'hover:bg-destructive/10 text-destructive',
+                'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-colors',
+                'text-destructive hover:bg-destructive/10',
                 isRTL && 'flex-row-reverse'
               )}
             >
-              <Trash2 className="h-5 w-5" />
+              <Trash2 className="h-4 w-4 flex-shrink-0" />
               <span className={cn(isRTL && 'font-arabic')}>
                 {isRTL ? 'حذف للجميع' : 'Delete for everyone'}
               </span>
