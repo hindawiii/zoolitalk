@@ -230,7 +230,8 @@
   }
   
   .chat-bubble-sent {
-    @apply bg-primary text-primary-foreground;
+    background-color: #2D5A27;
+    color: #ffffff;
     border-radius: 16px 16px 4px 16px;
   }
   

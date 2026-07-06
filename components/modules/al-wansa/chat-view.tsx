@@ -696,8 +696,8 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
           {isLoadingOlder && (
             <div className="flex justify-center py-2">
               <span className="flex items-center gap-2 rounded-full bg-card/80 px-3 py-1 shadow-sm backdrop-blur-sm">
-                <Loader2 className="h-4 w-4 animate-spin text-green-700" />
-                <span className={cn('text-xs text-green-700', isRTL && 'font-arabic')}>
+                <Loader2 className="h-4 w-4 animate-spin text-[#2D5A27]" />
+                <span className={cn('text-xs text-[#2D5A27]', isRTL && 'font-arabic')}>
                   {isRTL ? 'جاري تحميل الرسائل القديمة...' : 'Loading older messages...'}
                 </span>
               </span>
@@ -845,7 +845,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             </span>
             <Button
               size="icon"
-              className="rounded-full bg-primary hover:bg-primary/90"
+              className="h-12 w-12 rounded-full bg-[#2D5A27] text-white shadow-md transition-all duration-300 hover:bg-[#24491f] active:scale-95"
               onClick={sendVoiceNote}
             >
               <Send className="h-5 w-5" />
@@ -871,7 +871,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             </Button>
 
             {/* Multiline message field with emoji button inside */}
-            <div className="flex min-h-12 flex-1 items-center gap-1 rounded-3xl bg-secondary/40 px-3 py-1.5">
+            <div className="flex min-h-12 flex-1 items-center gap-1 rounded-3xl border border-[#2D5A27]/15 bg-background px-3 py-1.5 shadow-sm transition-all duration-300 focus-within:border-[#2D5A27]/40">
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -904,7 +904,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             {inputValue.trim() ? (
               <Button
                 size="icon"
-                className="h-12 w-12 flex-shrink-0 rounded-full bg-green-700 text-white transition-all duration-300 hover:bg-green-800"
+                className="h-12 w-12 flex-shrink-0 rounded-full bg-[#2D5A27] text-white shadow-md transition-all duration-300 hover:bg-[#24491f] active:scale-95"
                 onClick={handleSend}
                 aria-label={isRTL ? 'إرسال' : 'Send'}
               >
@@ -916,7 +916,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
                 <Button
                   size="icon"
                   variant={isListening ? 'default' : 'ghost'}
-                  className={cn('h-12 w-12 flex-shrink-0 rounded-full transition-all duration-300', isListening && 'recording-pulse')}
+                  className={cn('h-12 w-12 flex-shrink-0 rounded-full text-[#C9A227] transition-all duration-300 hover:bg-[#C9A227]/10 active:scale-95', isListening && 'recording-pulse')}
                   onClick={startSpeechToText}
                   aria-label={isRTL ? 'تسجيل صوتي' : 'Voice'}
                 >
@@ -1738,13 +1738,13 @@ function ChannelCommentsSheet({
             rows={1}
             placeholder={isRTL ? 'أضف تعليقًا...' : 'Add a comment...'}
             className={cn(
-              'max-h-24 min-h-12 flex-1 resize-none rounded-3xl bg-secondary/40 px-4 py-3 text-sm leading-relaxed outline-none placeholder:text-muted-foreground',
+              'max-h-24 min-h-12 flex-1 resize-none rounded-3xl border border-[#2D5A27]/15 bg-background px-4 py-3 text-sm leading-relaxed shadow-sm outline-none transition-all duration-300 focus:border-[#2D5A27]/40 placeholder:text-muted-foreground',
               isRTL && 'font-arabic text-right',
             )}
           />
           <Button
             size="icon"
-            className="h-12 w-12 flex-shrink-0 rounded-full bg-green-700 text-white transition-all duration-300 hover:bg-green-800 disabled:opacity-50"
+            className="h-12 w-12 flex-shrink-0 rounded-full bg-[#2D5A27] text-white shadow-md transition-all duration-300 hover:bg-[#24491f] active:scale-95 disabled:opacity-50"
             onClick={handleAdd}
             disabled={!value.trim()}
             aria-label={isRTL ? 'إرسال التعليق' : 'Send comment'}
