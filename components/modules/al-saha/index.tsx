@@ -19,7 +19,7 @@ const segments: Segment[] = [
   { id: 'feed', label: 'الساحة' },
   { id: 'trends', label: 'نبض الشارع' },
   { id: 'radar', label: 'الرادار' },
-  { id: 'reels', label: 'Reels' },
+  { id: 'reels', label: 'فيديوهات' },
 ]
 
 export default function AlSaha() {

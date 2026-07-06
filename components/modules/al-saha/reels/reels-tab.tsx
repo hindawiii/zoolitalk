@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { Heart, MessageCircle, Share2, Bookmark, Music, Plus, Volume2, VolumeX, Play } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Bookmark, Music, Plus, Volume2, VolumeX, Play, X, Link2, Send } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useReelsStore, type Reel } from '@/lib/stores/reels-store'
 import { ReelCommentsSheet } from './reel-comments-sheet'
@@ -20,13 +21,13 @@ interface ReelItemProps {
   muted: boolean
   onToggleMute: () => void
   onOpenComments: (id: string) => void
+  onOpenShare: (id: string) => void
   commentCount: number
 }
 
-function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, commentCount }: ReelItemProps) {
+function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, onOpenShare, commentCount }: ReelItemProps) {
   const toggleLike = useReelsStore((s) => s.toggleLike)
   const toggleSave = useReelsStore((s) => s.toggleSave)
-  const shareReel = useReelsStore((s) => s.shareReel)
 
   const videoRef = React.useRef<HTMLVideoElement | null>(null)
   const [paused, setPaused] = React.useState(false)
@@ -66,17 +67,6 @@ function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, commentCo
       }
     }
     lastTap.current = now
-  }
-
-  const handleShare = async () => {
-    shareReel(reel.id)
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Reel', text: reel.caption })
-      }
-    } catch {
-      /* user cancelled */
-    }
   }
 
   return (
@@ -146,7 +136,7 @@ function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, commentCo
         <RailButton onClick={() => onOpenComments(reel.id)} label="تعليق" count={formatCount(commentCount)}>
           <MessageCircle className="h-7 w-7" />
         </RailButton>
-        <RailButton onClick={handleShare} label="مشاركة" count={formatCount(reel.shares)}>
+        <RailButton onClick={() => onOpenShare(reel.id)} label="مشاركة" count={formatCount(reel.shares)}>
           <Share2 className="h-7 w-7" />
         </RailButton>
         <RailButton onClick={() => toggleSave(reel.id)} label="حفظ">
@@ -196,7 +186,11 @@ function RailButton({
   children: React.ReactNode
 }) {
   return (
-    <button onClick={onClick} aria-label={label} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 drop-shadow-lg transition-transform active:scale-90"
+    >
       {children}
       {count !== undefined && <span className="text-xs font-semibold drop-shadow">{count}</span>}
     </button>
@@ -212,6 +206,7 @@ export function ReelsTab() {
   const [activeIndex, setActiveIndex] = React.useState(0)
   const [muted, setMuted] = React.useState(true)
   const [commentsReelId, setCommentsReelId] = React.useState<string | null>(null)
+  const [shareReelId, setShareReelId] = React.useState<string | null>(null)
   const [composerOpen, setComposerOpen] = React.useState(false)
   const [feedHeight, setFeedHeight] = React.useState(0)
 
@@ -272,16 +267,17 @@ export function ReelsTab() {
               muted={muted}
               onToggleMute={() => setMuted((m) => !m)}
               onOpenComments={setCommentsReelId}
+              onOpenShare={setShareReelId}
               commentCount={commentCountFor(reel.id)}
             />
           </div>
         ))}
       </div>
 
-      {/* Create Reel button */}
+      {/* Create video button */}
       <button
         onClick={() => setComposerOpen(true)}
-        aria-label="إنشاء Reel"
+        aria-label="إنشاء فيديو"
         className="absolute top-3 start-3 z-20 flex items-center gap-1.5 rounded-full bg-[#2D5A27] px-3.5 py-2 text-white shadow-lg active:scale-95 transition-transform"
       >
         <Plus className="h-4 w-4" />
@@ -291,8 +287,126 @@ export function ReelsTab() {
       {/* Comments sheet */}
       <ReelCommentsSheet reelId={commentsReelId} onClose={() => setCommentsReelId(null)} />
 
+      {/* Share sheet */}
+      <AnimatePresence>
+        {shareReelId && (
+          <ShareSheet
+            reel={reels.find((r) => r.id === shareReelId)}
+            onClose={() => setShareReelId(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Composer */}
       <ReelComposer open={composerOpen} onClose={() => setComposerOpen(false)} />
     </div>
+  )
+}
+
+// Share bottom sheet: social targets + copy link + native Web Share API.
+function ShareSheet({ reel, onClose }: { reel?: Reel; onClose: () => void }) {
+  const shareReel = useReelsStore((s) => s.shareReel)
+  const [copied, setCopied] = React.useState(false)
+
+  const shareUrl = reel ? `https://rakobtana.app/video/${reel.id}` : 'https://rakobtana.app'
+  const shareText = reel?.caption || 'شاهد هذا الفيديو على راكوبتنا'
+
+  const track = () => reel && shareReel(reel.id)
+
+  const openTarget = (url: string) => {
+    track()
+    window.open(url, '_blank', 'noopener,noreferrer')
+    onClose()
+  }
+
+  const targets = [
+    { id: 'whatsapp', label: 'واتساب', color: '#25D366', url: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}` },
+    { id: 'facebook', label: 'فيسبوك', color: '#1877F2', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+    { id: 'telegram', label: 'تليجرام', color: '#0088CC', url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}` },
+    { id: 'twitter', label: 'تويتر', color: '#000000', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
+  ]
+
+  const handleCopy = async () => {
+    track()
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const handleNativeShare = async () => {
+    track()
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'راكوبتنا', text: shareText, url: shareUrl })
+        onClose()
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 z-30 bg-black/50"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-card p-4 pb-8"
+        onClick={(e) => e.stopPropagation()}
+        dir="rtl"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-arabic text-base font-bold text-foreground">مشاركة إلى</h3>
+          <button onClick={onClose} aria-label="إغلاق" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-secondary">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-4 gap-3">
+          {targets.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => openTarget(t.url)}
+              className="flex flex-col items-center gap-2"
+            >
+              <span
+                className="flex h-14 w-14 items-center justify-center rounded-full text-white"
+                style={{ backgroundColor: t.color }}
+              >
+                <Share2 className="h-6 w-6" />
+              </span>
+              <span className="font-arabic text-xs text-foreground">{t.label}</span>
+            </button>
+          ))}
+
+          <button onClick={handleCopy} className="flex flex-col items-center gap-2">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#C9A227] text-white">
+              <Link2 className="h-6 w-6" />
+            </span>
+            <span className="font-arabic text-xs text-foreground">{copied ? 'تم النسخ' : 'نسخ الرابط'}</span>
+          </button>
+
+          {typeof navigator !== 'undefined' && 'share' in navigator && (
+            <button onClick={handleNativeShare} className="flex flex-col items-center gap-2">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2D5A27] text-white">
+                <Send className="h-6 w-6" />
+              </span>
+              <span className="font-arabic text-xs text-foreground">المزيد</span>
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   )
 }
