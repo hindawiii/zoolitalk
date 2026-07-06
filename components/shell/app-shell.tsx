@@ -6,7 +6,6 @@ import { Settings } from 'lucide-react'
 import { BottomNavigation } from './bottom-navigation'
 import { SettingsDrawer } from './settings-drawer'
 import { MessageNotification } from '@/components/shared/message-notification'
-import { IncomingMessageSimulator } from '@/components/shared/incoming-message-simulator'
 import { useAppStore, type TabId } from '@/lib/stores/app-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { Button } from '@/components/ui/button'
@@ -135,9 +134,6 @@ export function AppShell() {
 
       {/* Global new-message toast (sound + vibration + tap to open) */}
       <MessageNotification />
-
-      {/* Demo: simulate incoming messages to drive notifications */}
-      <IncomingMessageSimulator />
     </div>
   )
 }

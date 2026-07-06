@@ -39,6 +39,17 @@ import {
   MessageSquare,
   Loader2,
   ImageIcon,
+  Search,
+  Calendar,
+  Users,
+  Link2,
+  Music,
+  MicOff,
+  MonitorUp,
+  Volume2,
+  Minimize2,
+  VideoOff,
+  UserPlus,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -60,7 +71,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { useChatStore, type Message } from '@/lib/stores/chat-store'
+import { useChatStore, type Message, type Chat } from '@/lib/stores/chat-store'
 import { useUserStore } from '@/lib/stores/user-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
@@ -124,7 +135,6 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     unblockChat,
     toggleReaction,
     typingUsers,
-    setTyping,
     markChatRead,
     addChannelComment,
   } = useChatStore()
@@ -268,32 +278,9 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
     return () => vp.removeEventListener('scroll', handleScroll)
   }, [getViewport, hasOlderMessages, isLoadingOlder])
 
-  // Demo-only: occasionally show the other participant "typing" in the open
-  // private chat so the header typing indicator is observable. Each burst
-  // clears itself after ~3 seconds.
+  // Recording timer — runs only while actively capturing (paused in preview)
   React.useEffect(() => {
-    if (!activeChatId || chat?.type !== 'private') return
-    const peerId = `peer-${activeChatId}`
-    let clearTimer: number | undefined
-
-    const startTyping = () => {
-      setTyping(activeChatId, peerId, true)
-      clearTimer = window.setTimeout(() => {
-        setTyping(activeChatId, peerId, false)
-      }, 3000)
-    }
-
-    const interval = window.setInterval(startTyping, 12000)
-    return () => {
-      window.clearInterval(interval)
-      if (clearTimer) window.clearTimeout(clearTimer)
-      setTyping(activeChatId, peerId, false)
-    }
-  }, [activeChatId, chat?.type, setTyping])
-
-  // Recording timer
-  React.useEffect(() => {
-    if (isRecording) {
+    if (isRecording && !recordedAudio) {
       recordingTimerRef.current = window.setInterval(() => {
         setRecordingDuration(recordingDuration + 1)
       }, 1000)
@@ -307,7 +294,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         clearInterval(recordingTimerRef.current)
       }
     }
-  }, [isRecording, recordingDuration, setRecordingDuration])
+  }, [isRecording, recordedAudio, recordingDuration, setRecordingDuration])
 
   const formatRecordingTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -319,7 +306,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
   const formatDateLabel = (date: Date) => {
     const d = new Date(date)
     if (isToday(d)) return isRTL ? 'اليوم' : 'Today'
-    if (isYesterday(d)) return isRTL ? 'أمس' : 'Yesterday'
+    if (isYesterday(d)) return isRTL ? '��مس' : 'Yesterday'
     return format(d, 'PPP', { locale: language === 'ar' ? ar : enUS })
   }
 
@@ -586,7 +573,7 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         {/* Clickable Avatar + Name to open profile */}
         <button 
           className="flex items-center gap-3 flex-1 min-w-0 hover:bg-secondary/50 rounded-lg p-1 -m-1 transition-colors"
-          onClick={() => chat.type === 'private' && chat.participants?.[0] && onOpenProfile?.(chat.participants[0])}
+          onClick={() => setShowProfile(true)}
         >
           <div className="relative flex-shrink-0">
             <Avatar className="h-10 w-10">
@@ -638,10 +625,10 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         </button>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => setCallType('voice')} aria-label={isRTL ? 'مكالمة صوتية' : 'Voice call'}>
             <Phone className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" onClick={() => setCallType('video')} aria-label={isRTL ? 'مكالمة فيديو' : 'Video call'}>
             <Video className="h-5 w-5" />
           </Button>
           <DropdownMenu>
@@ -891,27 +878,66 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
             </span>
           </div>
         ) : isRecording ? (
-          <motion.div
-            className="flex items-center gap-3"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="recording-pulse w-3 h-3 bg-destructive rounded-full" />
-            <span className="text-destructive font-mono">
-              {formatRecordingTime(recordingDuration)}
-            </span>
-            <span className={cn('flex-1 text-sm text-muted-foreground', isRTL && 'font-arabic')}>
-              {t('chat.slideCancel')}
-            </span>
-            <Button
-              size="icon"
-              className="h-12 w-12 rounded-full bg-[#2D5A27] text-white shadow-md transition-all duration-300 hover:bg-[#24491f] active:scale-95"
-              onClick={sendVoiceNote}
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </motion.div>
+          recordedAudio ? (
+            /* Preview phase: playable clip before sending */
+            <div className="flex items-center gap-2 rounded-2xl bg-secondary/40 p-2">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 flex-shrink-0 rounded-full text-destructive hover:bg-destructive/10"
+                onClick={cancelRecording}
+                aria-label={isRTL ? 'إلغاء' : 'Cancel'}
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+              <audio src={recordedAudio} controls className="h-9 min-w-0 flex-1" />
+              <Button
+                size="icon"
+                className="h-12 w-12 flex-shrink-0 rounded-full bg-[#2D5A27] text-white shadow-md transition-all duration-300 hover:bg-[#24491f] active:scale-95"
+                onClick={sendVoiceNote}
+                aria-label={isRTL ? 'إرسال' : 'Send'}
+              >
+                <Send className={cn('h-5 w-5', isRTL && 'rotate-180')} />
+              </Button>
+            </div>
+          ) : (
+            /* Recording phase: timer + animated waveform + cancel + stop */
+            <div className="flex items-center gap-2 rounded-2xl bg-secondary/30 p-2">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 flex-shrink-0 rounded-full text-destructive hover:bg-destructive/10"
+                onClick={cancelRecording}
+                aria-label={isRTL ? 'إلغاء التسجيل' : 'Cancel recording'}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              <div className="recording-pulse h-3 w-3 flex-shrink-0 rounded-full bg-destructive" />
+              <span className="flex-shrink-0 font-mono text-sm text-destructive">
+                {formatRecordingTime(recordingDuration)}
+              </span>
+              {/* Animated waveform */}
+              <div className="flex flex-1 items-center justify-center gap-0.5 overflow-hidden">
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <motion.span
+                    key={i}
+                    className="w-1 rounded-full bg-[#2D5A27]/60"
+                    animate={{ height: ['20%', '90%', '35%', '70%', '20%'] }}
+                    transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.05, ease: 'easeInOut' }}
+                    style={{ height: '20%' }}
+                  />
+                ))}
+              </div>
+              <Button
+                size="icon"
+                className="h-12 w-12 flex-shrink-0 rounded-full bg-[#2D5A27] text-white shadow-md transition-all duration-300 hover:bg-[#24491f] active:scale-95"
+                onClick={stopRecordingForPreview}
+                aria-label={isRTL ? 'إيقاف' : 'Stop'}
+              >
+                <Check className="h-5 w-5" />
+              </Button>
+            </div>
+          )
         ) : (
           <div className="flex items-end gap-2">
             {/* Attachment "+" button - opens attachment bottom sheet */}
@@ -1069,6 +1095,56 @@ export function ChatView({ onBack, onOpenGames, onOpenProfile }: ChatViewProps) 
         )}
       </AnimatePresence>
 
+      {/* Active Call Bottom Sheet (voice / video) */}
+      <AnimatePresence>
+        {callType && (
+          <CallSheet
+            type={callType}
+            name={isRTL ? chat.nameAr : chat.name}
+            avatar={chat.avatar}
+            onClose={() => setCallType(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Friend Profile Bottom Sheet (opened from header) */}
+      <AnimatePresence>
+        {showProfile && (
+          <ProfileSheet
+            chat={chat}
+            messages={chatMessages}
+            onClose={() => setShowProfile(false)}
+            onOpenImage={(url) => setImageViewerUrl(url)}
+            onVoiceCall={() => {
+              setShowProfile(false)
+              setCallType('voice')
+            }}
+            onVideoCall={() => {
+              setShowProfile(false)
+              setCallType('video')
+            }}
+            onMute={() => (chat.isMuted ? unmuteChat(chat.id) : muteChat(chat.id))}
+            onBlock={() => (chat.isBlocked ? unblockChat(chat.id) : setShowBlockDialog(true))}
+            onReport={() => setShowReportDialog(true)}
+            onSearch={() => {
+              setShowProfile(false)
+              setShowMessageSearch(true)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* In-conversation Message Search */}
+      <AnimatePresence>
+        {showMessageSearch && (
+          <MessageSearchSheet
+            messages={chatMessages}
+            currentUserId={currentUser?.id}
+            onClose={() => setShowMessageSearch(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Wallpaper Picker Sheet */}
       <AnimatePresence>
         {showWallpaperPicker && (
@@ -1217,11 +1293,12 @@ function MessageBubble({ message, isSent, showAvatar, showSenderName, currentUse
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         animate={controls}
+        dir="ltr"
         className={cn(
           'flex items-end gap-2',
-          // WhatsApp-style physical layout (independent of RTL):
-          // own messages on the LEFT, received messages on the RIGHT.
-          isSent ? 'justify-start flex-row' : 'justify-end flex-row-reverse',
+          // WhatsApp-style RTL layout: own (sent) messages on the RIGHT,
+          // received messages on the LEFT with the sender avatar.
+          isSent ? 'justify-end flex-row' : 'justify-start flex-row',
         )}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -1669,7 +1746,7 @@ function DeleteMessageDialog({
           <AlertDialogDescription className={cn(isRTL && 'font-arabic text-right')}>
             {deleteTarget?.type === 'everyone'
               ? (isRTL ? 'سيتم حذف هذه الرسالة للجميع' : 'This message will be deleted for everyone')
-              : (isRTL ? 'سيتم حذف هذه الرسالة لك فقط' : 'This message will only be deleted for you')
+              : (isRTL ? 'سيتم حذ�� هذه الرسالة لك فقط' : 'This message will only be deleted for you')
             }
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -1812,6 +1889,542 @@ function ChannelCommentsSheet({
           </Button>
         </div>
       </motion.div>
+    </motion.div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Active Call Bottom Sheet (voice / video)
+// ---------------------------------------------------------------------------
+function CallSheet({
+  type,
+  name,
+  avatar,
+  onClose,
+}: {
+  type: 'voice' | 'video'
+  name: string
+  avatar: string
+  onClose: () => void
+}) {
+  const { isRTL } = useLanguage()
+  const [seconds, setSeconds] = React.useState(0)
+  const [connecting, setConnecting] = React.useState(true)
+  const [muted, setMuted] = React.useState(false)
+  const [speaker, setSpeaker] = React.useState(type === 'video')
+  const [isVideo, setIsVideo] = React.useState(type === 'video')
+  const [sharing, setSharing] = React.useState(false)
+
+  React.useEffect(() => {
+    const connectTimer = window.setTimeout(() => setConnecting(false), 2500)
+    return () => window.clearTimeout(connectTimer)
+  }, [])
+
+  React.useEffect(() => {
+    if (connecting) return
+    const t = window.setInterval(() => setSeconds((s) => s + 1), 1000)
+    return () => window.clearInterval(t)
+  }, [connecting])
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
+
+  const status = connecting
+    ? isVideo
+      ? isRTL ? 'جاري بدء مكالمة فيديو...' : 'Starting video call...'
+      : isRTL ? 'جاري الاتصال...' : 'Calling...'
+    : sharing
+      ? isRTL ? 'يشارك الشاشة' : 'Sharing screen'
+      : fmt(seconds)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+      className="fixed inset-0 z-[70] mx-auto flex w-full max-w-md flex-col bg-[#1B3A17] text-white"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      {/* Video preview backdrop (when video is active) */}
+      {isVideo && (
+        <div className="absolute inset-0 bg-gradient-to-b from-[#24491f] via-[#1B3A17] to-[#0f2410]">
+          {/* Self preview */}
+          <div className="absolute bottom-28 h-40 w-28 overflow-hidden rounded-2xl border border-white/20 bg-black/40 shadow-lg end-4">
+            <div className="flex h-full w-full items-center justify-center text-white/40">
+              <Video className="h-8 w-8" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top bar */}
+      <div
+        className="relative z-10 flex items-center justify-between px-4 pt-5"
+        style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top, 0))' }}
+      >
+        <button
+          onClick={onClose}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 backdrop-blur transition-transform active:scale-95"
+          aria-label={isRTL ? 'العودة للمحادثة' : 'Back to chat'}
+        >
+          <Minimize2 className="h-5 w-5" />
+        </button>
+        <span className={cn('text-sm text-white/70', isRTL && 'font-arabic')}>
+          {isVideo ? (isRTL ? 'مكالمة فيديو' : 'Video call') : (isRTL ? 'مكالمة صوتية' : 'Voice call')}
+        </span>
+        <span className="h-10 w-10" />
+      </div>
+
+      {/* Center: caller identity */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4 px-6">
+        <Avatar className="h-28 w-28 border-2 border-white/30 shadow-xl">
+          <AvatarImage src={avatar} alt={name} />
+          <AvatarFallback className="bg-white/20 text-3xl text-white">{name[0]}</AvatarFallback>
+        </Avatar>
+        <h3 className={cn('text-2xl font-bold', isRTL && 'font-arabic')}>{name}</h3>
+        <p className={cn('flex items-center justify-center gap-2 text-sm text-white/80', isRTL && 'font-arabic')}>
+          {connecting && (
+            <span className="flex gap-1">
+              <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" />
+              <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: '0.2s' }} />
+              <span className="typing-dot h-1.5 w-1.5 rounded-full bg-white" style={{ animationDelay: '0.4s' }} />
+            </span>
+          )}
+          {status}
+        </p>
+      </div>
+
+      {/* Controls */}
+      <div
+        className="relative z-10 px-6 pb-8"
+        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0))' }}
+      >
+        {/* Secondary controls row */}
+        <div className="mb-5 flex items-center justify-center gap-4">
+          <CallControl
+            icon={muted ? MicOff : Mic}
+            label={isRTL ? 'كتم' : 'Mute'}
+            active={muted}
+            onClick={() => setMuted((m) => !m)}
+          />
+          <CallControl
+            icon={isVideo ? VideoOff : Video}
+            label={isVideo ? (isRTL ? 'إيقاف الفيديو' : 'Stop video') : (isRTL ? 'تحويل لفيديو' : 'Switch to video')}
+            active={isVideo}
+            onClick={() => setIsVideo((v) => !v)}
+          />
+          <CallControl
+            icon={MonitorUp}
+            label={isRTL ? 'مشاركة الشاشة' : 'Share screen'}
+            active={sharing}
+            onClick={() => setSharing((s) => !s)}
+          />
+          <CallControl
+            icon={Volume2}
+            label={isRTL ? 'مكبر الصوت' : 'Speaker'}
+            active={speaker}
+            onClick={() => setSpeaker((s) => !s)}
+          />
+        </div>
+
+        {/* Primary controls row */}
+        <div className="flex items-center justify-center gap-10">
+          <CallControl icon={UserPlus} label={isRTL ? 'إضافة' : 'Add'} onClick={() => {}} />
+          <button
+            onClick={onClose}
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive shadow-lg transition-transform active:scale-95"
+            aria-label={isRTL ? 'إنهاء المكالمة' : 'End call'}
+          >
+            <Phone className="h-7 w-7 rotate-[135deg]" />
+          </button>
+          <CallControl icon={MessageSquare} label={isRTL ? 'رسالة' : 'Message'} onClick={onClose} />
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function CallControl({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  onClick: () => void
+  active?: boolean
+}) {
+  const { isRTL } = useLanguage()
+  return (
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5" aria-label={label}>
+      <span
+        className={cn(
+          'flex h-13 w-13 items-center justify-center rounded-full transition-colors',
+          active ? 'bg-white text-[#1B3A17]' : 'bg-white/15 text-white',
+        )}
+        style={{ height: '3.25rem', width: '3.25rem' }}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className={cn('text-[11px] text-white/80', isRTL && 'font-arabic')}>{label}</span>
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Friend Profile Bottom Sheet
+// ---------------------------------------------------------------------------
+type MediaKind = 'image' | 'video' | 'document' | 'link' | 'audio'
+
+function ProfileSheet({
+  chat,
+  messages,
+  onClose,
+  onOpenImage,
+  onVoiceCall,
+  onVideoCall,
+  onMute,
+  onBlock,
+  onReport,
+  onSearch,
+}: {
+  chat: Chat
+  messages: Message[]
+  onClose: () => void
+  onOpenImage: (url: string) => void
+  onVoiceCall: () => void
+  onVideoCall: () => void
+  onMute: () => void
+  onBlock: () => void
+  onReport: () => void
+  onSearch: () => void
+}) {
+  const { language, isRTL } = useLanguage()
+  const [tab, setTab] = React.useState<'info' | 'media'>('info')
+  const [mediaKind, setMediaKind] = React.useState<MediaKind>('image')
+
+  const name = isRTL ? chat.nameAr : chat.name
+  const totalMessages = messages.length
+  const firstMessageDate = messages[0]?.timestamp
+
+  // Collect shared media of the selected kind.
+  const mediaItems = React.useMemo(() => {
+    const urlRe = /(https?:\/\/[^\s]+)/i
+    switch (mediaKind) {
+      case 'image':
+        return messages.filter((m) => m.type === 'image' && m.imageUrl).map((m) => m.imageUrl!)
+      case 'video':
+        return messages.filter((m) => m.type === 'video').map((m) => m.videoThumbnail || m.videoUrl || '')
+      case 'document':
+        return messages.filter((m) => m.type === 'document')
+      case 'audio':
+        return messages.filter((m) => m.type === 'voice')
+      case 'link':
+        return messages.filter((m) => m.type === 'text' && urlRe.test(m.content))
+      default:
+        return []
+    }
+  }, [messages, mediaKind])
+
+  const mediaTabs: { id: MediaKind; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'image', label: isRTL ? 'صور' : 'Photos', icon: ImageIcon },
+    { id: 'video', label: isRTL ? 'فيديوهات' : 'Videos', icon: Video },
+    { id: 'document', label: isRTL ? 'مستندات' : 'Docs', icon: FileText },
+    { id: 'link', label: isRTL ? 'روابط' : 'Links', icon: Link2 },
+    { id: 'audio', label: isRTL ? 'صوتيات' : 'Audio', icon: Music },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: isRTL ? '-100%' : '100%' }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: isRTL ? '-100%' : '100%' }}
+      transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+      className="fixed inset-0 z-[60] mx-auto flex w-full max-w-md flex-col bg-card"
+      onClick={(e) => e.stopPropagation()}
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      {/* Header */}
+      <div
+        className="relative flex flex-col items-center gap-2 border-b px-4 pb-5 pt-6"
+        style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0))' }}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute start-3 top-3"
+          style={{ top: 'calc(0.75rem + env(safe-area-inset-top, 0))' }}
+          onClick={onClose}
+          aria-label={isRTL ? 'رجوع' : 'Back'}
+        >
+          {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+        </Button>
+        <Avatar className="h-24 w-24">
+          <AvatarImage src={chat.avatar} alt={name} />
+          <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
+        </Avatar>
+        <h3 className={cn('text-xl font-bold', isRTL && 'font-arabic')}>{name}</h3>
+        <p className={cn('text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+            {chat.isOnline ? (isRTL ? 'متصل الآن' : 'Online') : (isRTL ? 'آخر ظهور قريباً' : 'Last seen recently')}
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b">
+          {(['info', 'media'] as const).map((id) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex-1 py-3 text-sm font-semibold transition-colors',
+                tab === id ? 'border-b-2 border-[#2D5A27] text-[#2D5A27]' : 'text-muted-foreground',
+                isRTL && 'font-arabic',
+              )}
+            >
+              {id === 'info' ? (isRTL ? 'معلومات' : 'Info') : (isRTL ? 'الوسائط' : 'Media')}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {tab === 'info' ? (
+            <div className="space-y-4">
+              {/* Stats */}
+              <div className="space-y-2">
+                <div className={cn('flex items-center gap-3 rounded-xl bg-secondary/40 p-3', isRTL && 'flex-row-reverse text-right')}>
+                  <MessageSquare className="h-5 w-5 flex-shrink-0 text-[#2D5A27]" />
+                  <div className="flex-1">
+                    <p className={cn('text-sm font-medium', isRTL && 'font-arabic')}>{isRTL ? 'الرسائل المشتركة' : 'Shared messages'}</p>
+                    <p className="text-xs text-muted-foreground">{totalMessages}</p>
+                  </div>
+                </div>
+                <div className={cn('flex items-center gap-3 rounded-xl bg-secondary/40 p-3', isRTL && 'flex-row-reverse text-right')}>
+                  <Calendar className="h-5 w-5 flex-shrink-0 text-[#2D5A27]" />
+                  <div className="flex-1">
+                    <p className={cn('text-sm font-medium', isRTL && 'font-arabic')}>{isRTL ? 'بداية المحادثة' : 'Chat started'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {firstMessageDate ? format(new Date(firstMessageDate), 'PP', { locale: language === 'ar' ? ar : enUS }) : '—'}
+                    </p>
+                  </div>
+                </div>
+                <div className={cn('flex items-center gap-3 rounded-xl bg-secondary/40 p-3', isRTL && 'flex-row-reverse text-right')}>
+                  <Users className="h-5 w-5 flex-shrink-0 text-[#2D5A27]" />
+                  <div className="flex-1">
+                    <p className={cn('text-sm font-medium', isRTL && 'font-arabic')}>{isRTL ? 'الأصدقاء المشتركون' : 'Mutual friends'}</p>
+                    <p className="text-xs text-muted-foreground">{isRTL ? 'لا يوجد' : 'None'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick actions */}
+              <div className="grid grid-cols-2 gap-2">
+                <ProfileAction icon={Phone} label={isRTL ? 'مكالمة صوتية' : 'Voice call'} onClick={onVoiceCall} />
+                <ProfileAction icon={Video} label={isRTL ? 'مكالمة فيديو' : 'Video call'} onClick={onVideoCall} />
+                <ProfileAction icon={chat.isMuted ? Bell : BellOff} label={chat.isMuted ? (isRTL ? 'إلغاء الكتم' : 'Unmute') : (isRTL ? 'كتم الإشعارات' : 'Mute')} onClick={onMute} active={chat.isMuted} />
+                <ProfileAction icon={Ban} label={chat.isBlocked ? (isRTL ? 'إلغاء الحظر' : 'Unblock') : (isRTL ? 'حظر' : 'Block')} onClick={onBlock} active={chat.isBlocked} danger />
+              </div>
+              <ProfileAction icon={Flag} label={isRTL ? 'إبلاغ' : 'Report'} onClick={onReport} danger full />
+            </div>
+          ) : (
+            <div>
+              {/* Sub tabs */}
+              <div className="mb-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {mediaTabs.map((mt) => {
+                  const Icon = mt.icon
+                  return (
+                    <button
+                      key={mt.id}
+                      onClick={() => setMediaKind(mt.id)}
+                      className={cn(
+                        'flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                        mediaKind === mt.id ? 'bg-[#2D5A27] text-white' : 'bg-secondary/50 text-muted-foreground',
+                        isRTL && 'font-arabic',
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {mt.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {mediaItems.length === 0 ? (
+                <p className={cn('py-10 text-center text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+                  {isRTL ? 'لا توجد وسائط' : 'No media'}
+                </p>
+              ) : mediaKind === 'image' || mediaKind === 'video' ? (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(mediaItems as string[]).map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => onOpenImage(url)}
+                      className="relative aspect-square overflow-hidden rounded-lg bg-muted"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url || '/placeholder.svg'} alt="" className="h-full w-full object-cover" />
+                      {mediaKind === 'video' && (
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <Play className="h-6 w-6 text-white" />
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(mediaItems as Message[]).map((m) => (
+                    <div key={m.id} className={cn('flex items-center gap-3 rounded-xl bg-secondary/40 p-3', isRTL && 'flex-row-reverse text-right')}>
+                      {mediaKind === 'document' ? <FileText className="h-5 w-5 flex-shrink-0 text-[#2D5A27]" /> :
+                       mediaKind === 'audio' ? <Music className="h-5 w-5 flex-shrink-0 text-[#2D5A27]" /> :
+                       <Link2 className="h-5 w-5 flex-shrink-0 text-[#2D5A27]" />}
+                      <p className={cn('min-w-0 flex-1 truncate text-sm', isRTL && 'font-arabic')}>
+                        {mediaKind === 'document' ? (m.documentName || (isRTL ? 'مستند' : 'Document')) :
+                         mediaKind === 'audio' ? (isRTL ? 'رسالة صوتية' : 'Voice message') :
+                         m.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Search in messages */}
+        <div className="border-t p-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0))' }}>
+          <button
+            onClick={onSearch}
+            className={cn(
+              'flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2D5A27] py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98]',
+              isRTL && 'font-arabic flex-row-reverse',
+            )}
+          >
+            <Search className="h-4 w-4" />
+            {isRTL ? 'البحث في الرسائل' : 'Search in messages'}
+          </button>
+        </div>
+    </motion.div>
+  )
+}
+
+function ProfileAction({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+  danger,
+  full,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  onClick: () => void
+  active?: boolean
+  danger?: boolean
+  full?: boolean
+}) {
+  const { isRTL } = useLanguage()
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition-colors',
+        full && 'col-span-2 flex-row gap-2',
+        danger ? 'border-destructive/30 text-destructive hover:bg-destructive/10' : 'border-border hover:bg-secondary/50',
+        active && !danger && 'border-[#2D5A27] bg-[#2D5A27]/10 text-[#2D5A27]',
+        isRTL && 'font-arabic',
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      {label}
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// In-conversation Message Search
+// ---------------------------------------------------------------------------
+function MessageSearchSheet({
+  messages,
+  currentUserId,
+  onClose,
+}: {
+  messages: Message[]
+  currentUserId?: string
+  onClose: () => void
+}) {
+  const { language, isRTL } = useLanguage()
+  const [query, setQuery] = React.useState('')
+
+  const results = React.useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return []
+    return messages.filter(
+      (m) => m.type === 'text' && !m.deletedForEveryone && m.content.toLowerCase().includes(q),
+    )
+  }, [messages, query])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex flex-col bg-card"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      {/* Search header */}
+      <div className="flex items-center gap-2 border-b p-3">
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label={isRTL ? 'رجوع' : 'Back'}>
+          {isRTL ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
+        </Button>
+        <div className="flex flex-1 items-center gap-2 rounded-full border bg-background px-3 py-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={isRTL ? 'ابحث في الرسائل...' : 'Search messages...'}
+            className={cn('flex-1 bg-transparent text-sm outline-none', isRTL && 'font-arabic text-right')}
+          />
+          {query && (
+            <button onClick={() => setQuery('')} aria-label={isRTL ? 'مسح' : 'Clear'}>
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="flex-1 overflow-y-auto p-3">
+        {query.trim() === '' ? (
+          <p className={cn('py-10 text-center text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+            {isRTL ? 'اكتب للبحث في هذه المحادثة' : 'Type to search this conversation'}
+          </p>
+        ) : results.length === 0 ? (
+          <p className={cn('py-10 text-center text-sm text-muted-foreground', isRTL && 'font-arabic')}>
+            {isRTL ? 'لا توجد نتائج' : 'No results'}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {results.map((m) => {
+              const isSent = m.senderId === currentUserId
+              return (
+                <div key={m.id} className={cn('rounded-xl bg-secondary/40 p-3', isRTL && 'text-right')}>
+                  <div className={cn('flex items-baseline justify-between gap-2', isRTL && 'flex-row-reverse')}>
+                    <span className={cn('text-xs font-semibold text-[#2D5A27]', isRTL && 'font-arabic')}>
+                      {isSent ? (isRTL ? 'أنت' : 'You') : m.senderName}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {format(new Date(m.timestamp), 'PP p', { locale: language === 'ar' ? ar : enUS })}
+                    </span>
+                  </div>
+                  <p className={cn('mt-1 text-sm', isRTL && 'font-arabic')}>{m.content}</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }

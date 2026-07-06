@@ -11,10 +11,10 @@ import { playNotificationSound, vibrateDevice } from '@/lib/notification-feedbac
 import { cn } from '@/lib/utils'
 
 /**
- * Global, app-wide toast that appears at the bottom of the screen whenever a
+ * Global, app-wide toast that appears at the top of the screen whenever a
  * new message arrives while the user is outside that conversation. It plays a
  * short sound, vibrates the device, shows the sender + preview, auto-dismisses
- * after 4 seconds, and opens the chat when tapped.
+ * after 5 seconds, and opens the chat when tapped.
  */
 export function MessageNotification() {
   const { notification, clearNotification, setActiveChatId, markChatRead } = useChatStore()
@@ -34,7 +34,7 @@ export function MessageNotification() {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       clearNotification()
-    }, 4000)
+    }, 5000)
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -54,11 +54,12 @@ export function MessageNotification() {
       {notification && (
         <motion.div
           key={notification.id}
-          initial={{ opacity: 0, y: 80 }}
+          initial={{ opacity: 0, y: -80 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 80 }}
+          exit={{ opacity: 0, y: -80 }}
           transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-          className="fixed inset-x-0 bottom-20 z-[120] flex justify-center px-4"
+          className="fixed inset-x-0 top-3 z-[120] flex justify-center px-4"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0)' }}
           dir={isRTL ? 'rtl' : 'ltr'}
         >
           <button
