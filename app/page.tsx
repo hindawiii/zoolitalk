@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { AppShell } from '@/components/shell/app-shell'
 import { AuthScreen } from '@/components/auth/auth-screen'
 import { useUserStore } from '@/lib/stores/user-store'
+import { watchAuth } from '@/lib/firebase/auth'
 
 // Loading fallback
 function AppLoader() {
@@ -19,6 +20,9 @@ function AppLoader() {
 
 export default function HomePage() {
   const isAuthenticated = useUserStore((s) => s.isAuthenticated)
+  const authLoading = useUserStore((s) => s.authLoading)
+  const hydrateFromFirebaseUser = useUserStore((s) => s.hydrateFromFirebaseUser)
+  const clearAuth = useUserStore((s) => s.clearAuth)
   const [mounted, setMounted] = useState(false)
 
   // Avoid a hydration flash: wait for the persisted store to rehydrate
@@ -26,7 +30,21 @@ export default function HomePage() {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
+  // Subscribe to Firebase auth state. This is the single source of truth for
+  // whether the user is signed in, and it loads their real profile.
+  useEffect(() => {
+    const unsubscribe = watchAuth((fbUser) => {
+      if (fbUser) {
+        void hydrateFromFirebaseUser(fbUser)
+      } else {
+        clearAuth()
+      }
+    })
+    return unsubscribe
+  }, [hydrateFromFirebaseUser, clearAuth])
+
+  // Wait for mount and for Firebase to report the initial auth state
+  if (!mounted || authLoading) {
     return <AppLoader />
   }
 

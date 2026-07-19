@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { doc, setDoc, getDoc, onSnapshot, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { db, isFirestoreAvailable } from '@/lib/firebase/config'
+import type { FirebaseUser } from '@/lib/firebase/auth'
 
 export type Gender = 'male' | 'female'
 export type SocialStatus = 'single' | 'taken' | 'engaged' | 'married' | 'complicated' | 'gave_up'
@@ -85,6 +86,12 @@ interface UserState {
   // Authentication
   isAuthenticated: boolean
   setAuthenticated: (auth: boolean) => void
+  // True until the first Firebase auth-state callback resolves
+  authLoading: boolean
+  // Build/load the real profile from a signed-in Firebase user
+  hydrateFromFirebaseUser: (fbUser: FirebaseUser) => Promise<void>
+  // Clear session (on sign-out / no user)
+  clearAuth: () => void
   
   // Blocked users
   blockedUsers: BlockedUser[]
@@ -104,45 +111,8 @@ interface UserState {
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
-      // Demo user for development
-      currentUser: {
-        id: 'user-1',
-        username: 'hindawiii',
-        name: 'Hindawi',
-        nameAr: 'هنداوي',
-        nickname: 'هنداوي',
-        email: 'hindawi@rakobatna.sd',
-        phone: '+249912345678',
-        avatar: '/avatars/default.jpg',
-        coverPhoto: '/covers/default.jpg',
-        bio: 'Proud Sudanese! Love coffee and good conversations.',
-        bioAr: 'مواطن سوداني! ولربما يفاجئك ما قد يحدث.',
-        zoolPoints: 1250,
-        followers: 342,
-        following: 156,
-        postsCount: 47,
-        isOnline: true,
-        lastSeen: null,
-        isVerified: true,
-        location: 'الخرطوم',
-        gender: 'male',
-        socialStatus: 'single',
-        professionalStatus: 'freelancer',
-        rank: 'knight',
-        rankTitle: 'فارس',
-        gifts: [
-          { id: 'g1', giftType: 'heritage', giftName: 'Jabana', giftNameAr: 'جبنة', giftEmoji: '☕', senderName: 'Ahmed', senderNameAr: 'أحمد', isPrivate: false, receivedAt: new Date() },
-          { id: 'g2', giftType: 'heritage', giftName: 'Markoub', giftNameAr: 'مركوب', giftEmoji: '👞', isPrivate: true, receivedAt: new Date() },
-          { id: 'g3', giftType: 'flowers', giftName: 'Jasmine', giftNameAr: 'ياسمين', giftEmoji: '🌸', senderName: 'Sara', senderNameAr: 'سارة', isPrivate: false, receivedAt: new Date() },
-          { id: 'g4', giftType: 'luxury', giftName: 'Gold Ring', giftNameAr: 'خاتم ذهب', giftEmoji: '💍', isPrivate: true, receivedAt: new Date() },
-          { id: 'g5', giftType: 'flowers', giftName: 'Red Rose', giftNameAr: 'ورد أحمر', giftEmoji: '🌹', senderName: 'Mohamed', senderNameAr: 'محمد', isPrivate: false, receivedAt: new Date() },
-        ],
-        featuredPosts: [
-          { id: 'fp1', thumbnail: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', likes: 234, comments: 45 },
-          { id: 'fp2', thumbnail: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400', likes: 567, comments: 89 },
-          { id: 'fp3', thumbnail: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400', likes: 123, comments: 23 },
-        ],
-      },
+      // No demo user. The real profile is loaded from Firebase/Firestore.
+      currentUser: null,
       setCurrentUser: (currentUser) => set({ currentUser }),
       updateProfile: (updates) => {
         set((state) => ({
@@ -251,6 +221,87 @@ export const useUserStore = create<UserState>()(
       
       isAuthenticated: false, // Start at the login screen
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
+
+      // Gate the UI until Firebase reports the initial auth state
+      authLoading: true,
+
+      // Load (or create) the real profile for a signed-in Firebase user
+      hydrateFromFirebaseUser: async (fbUser: FirebaseUser) => {
+        const uid = fbUser.uid
+
+        // Fallback profile built purely from the Firebase user, used when
+        // Firestore is unavailable or the document does not exist yet.
+        const displayName =
+          fbUser.displayName?.trim() ||
+          fbUser.email?.split('@')[0] ||
+          'زول جديد'
+
+        const baseProfile: User = {
+          id: uid,
+          username: fbUser.email?.split('@')[0] || uid.slice(0, 8),
+          name: displayName,
+          nameAr: displayName,
+          nickname: displayName,
+          email: fbUser.email || '',
+          phone: fbUser.phoneNumber || '',
+          avatar: fbUser.photoURL || '/avatars/default.jpg',
+          coverPhoto: '/covers/default.jpg',
+          bio: '',
+          bioAr: '',
+          zoolPoints: 0,
+          followers: 0,
+          following: 0,
+          postsCount: 0,
+          isOnline: true,
+          lastSeen: null,
+          isVerified: false,
+          location: '',
+          gender: undefined,
+          rank: 'newbie',
+          rankTitle: 'زول جديد',
+        }
+
+        // If Firestore isn't available, just use the base profile locally.
+        if (!isFirestoreAvailable() || !db) {
+          set({ currentUser: baseProfile, isAuthenticated: true, authLoading: false })
+          return
+        }
+
+        try {
+          const userRef = doc(db, 'users', uid)
+          const snap = await getDoc(userRef)
+
+          if (snap.exists()) {
+            // Merge stored profile over the base so new fields have defaults.
+            const data = snap.data()
+            const merged: User = {
+              ...baseProfile,
+              ...data,
+              id: uid,
+              email: fbUser.email || data.email || '',
+              phone: fbUser.phoneNumber || data.phone || '',
+              lastSeen: data.lastSeen?.toDate?.() ?? null,
+            } as User
+            set({ currentUser: merged, isAuthenticated: true, authLoading: false })
+          } else {
+            // First sign-in: create the profile document in Firestore.
+            await setDoc(userRef, {
+              ...baseProfile,
+              lastSeen: serverTimestamp(),
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            })
+            set({ currentUser: baseProfile, isAuthenticated: true, authLoading: false })
+          }
+        } catch (error) {
+          console.error('[v0] Error hydrating profile from Firestore:', error)
+          set({ currentUser: baseProfile, isAuthenticated: true, authLoading: false })
+        }
+      },
+
+      // Clear the session when Firebase reports no user
+      clearAuth: () =>
+        set({ currentUser: null, isAuthenticated: false, authLoading: false }),
       
       blockedUsers: [],
       blockUser: (user) => 
@@ -289,9 +340,16 @@ export const useUserStore = create<UserState>()(
     {
       name: 'rakobatna-user-storage',
       storage: createJSONStorage(() => localStorage),
+      // Bumped to wipe old demo-user / stale-auth data from returning users.
+      version: 2,
+      migrate: () => ({
+        currentUser: null,
+        isAuthenticated: false,
+        blockedUsers: [],
+        followingIds: [],
+      }),
+      // Do NOT persist isAuthenticated — Firebase is the source of truth.
       partialize: (state) => ({
-        currentUser: state.currentUser,
-        isAuthenticated: state.isAuthenticated,
         blockedUsers: state.blockedUsers,
         followingIds: state.followingIds,
       }),

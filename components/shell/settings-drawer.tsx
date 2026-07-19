@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useAppStore } from '@/lib/stores/app-store'
 import { useUserStore } from '@/lib/stores/user-store'
+import { signOutUser } from '@/lib/firebase/auth'
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -89,9 +90,13 @@ export function SettingsDrawer() {
     setTheme(isDark ? 'light' : 'dark')
   }
 
-  const handleLogout = () => {
-    setAuthenticated(false)
+  const handleLogout = async () => {
     setSettingsOpen(false)
+    // Sign out of Firebase; the auth watcher in app/page.tsx clears the
+    // session and returns the user to the login screen.
+    await signOutUser()
+    // Fallback for demo mode (no Firebase session to end).
+    setAuthenticated(false)
   }
 
   // Blocklist view
