@@ -260,11 +260,9 @@ export function AuthScreen() {
       <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl shadow-black/30 font-arabic">
         {/* ---------- Welcome hero (top) ---------- */}
         <div className="auth-hero rakoba-pattern relative flex flex-col items-center gap-2 px-6 pb-6 pt-7 text-center">
-          <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 shadow-sm">
-            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-white">
-              <RakobaLogo size="sm" />
-            </span>
-            <span className="text-sm font-extrabold tracking-wide text-primary">راكوبتنا</span>
+          <div className="flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 shadow-sm">
+            <RakobaLogo size="sm" />
+            <span className="text-base font-extrabold tracking-wide text-primary">راكوبتنا</span>
           </div>
           <h1 className="text-balance text-xl font-extrabold text-white">أهلاً بيك في راكوبتنا</h1>
           <p className="max-w-[18rem] text-pretty text-[13px] leading-relaxed text-white/85">

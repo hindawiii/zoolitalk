@@ -55,22 +55,7 @@ export interface Reel {
   createdAt: number
 }
 
-// ----- Demo data -----
-
-// Public sample portrait/landscape videos (loop fine for a demo feed).
-const SAMPLE_VIDEOS = [
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-]
-
-const POSTERS = [
-  'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=600',
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600',
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600',
-  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600',
-]
+// ----- Reference data -----
 
 export const MUSIC_LIBRARY: ReelTrack[] = [
   { id: 'tr-1', title: 'إيقاع سوداني', artist: 'فرقة النيل' },
@@ -88,118 +73,9 @@ export const MENTION_USERS: MentionUser[] = [
   { id: 'user-1', username: 'hindawiii', name: 'Hindawi', nameAr: 'هنداوي', avatar: '/avatars/default.jpg' },
 ]
 
-const now = Date.now()
+const demoReels: Reel[] = []
 
-const demoReels: Reel[] = [
-  {
-    id: 'reel-1',
-    ownerId: 'user-2',
-    ownerName: 'Fatima Ali',
-    ownerNameAr: 'فاطمة علي',
-    ownerAvatar: '/avatars/fatima.jpg',
-    videoUrl: SAMPLE_VIDEOS[0],
-    posterUrl: POSTERS[0],
-    caption: 'جولة في شوارع الخرطوم 🌆 #السودان #ريلز',
-    track: MUSIC_LIBRARY[0],
-    likes: 1240,
-    shares: 87,
-    liked: false,
-    saved: false,
-    createdAt: now - 1000 * 60 * 30,
-  },
-  {
-    id: 'reel-2',
-    ownerId: 'user-3',
-    ownerName: 'Omar Hassan',
-    ownerNameAr: 'عمر حسن',
-    ownerAvatar: '/avatars/omar.jpg',
-    videoUrl: SAMPLE_VIDEOS[1],
-    posterUrl: POSTERS[1],
-    caption: 'لحظات لا تُنسى من المباراة أمس 🦁⚽',
-    track: MUSIC_LIBRARY[3],
-    likes: 3420,
-    shares: 210,
-    liked: true,
-    saved: false,
-    createdAt: now - 1000 * 60 * 60 * 3,
-  },
-  {
-    id: 'reel-3',
-    ownerId: 'user-4',
-    ownerName: 'Sara Mohamed',
-    ownerNameAr: 'سارة محمد',
-    ownerAvatar: '/avatars/sara.jpg',
-    videoUrl: SAMPLE_VIDEOS[2],
-    posterUrl: POSTERS[2],
-    caption: 'وصفة الجبنة على الطريقة السودانية ☕✨',
-    track: MUSIC_LIBRARY[2],
-    likes: 845,
-    shares: 33,
-    liked: false,
-    saved: true,
-    createdAt: now - 1000 * 60 * 60 * 8,
-  },
-  {
-    id: 'reel-4',
-    ownerId: 'user-5',
-    ownerName: 'Ahmed Khalid',
-    ownerNameAr: 'أحمد خالد',
-    ownerAvatar: '/avatars/ahmed.jpg',
-    videoUrl: SAMPLE_VIDEOS[3],
-    posterUrl: POSTERS[3],
-    caption: 'غروب على النيل يستحق المشاهدة 🌅',
-    likes: 2100,
-    shares: 154,
-    liked: false,
-    saved: false,
-    createdAt: now - 1000 * 60 * 60 * 20,
-  },
-]
-
-const demoComments: ReelComment[] = [
-  {
-    id: 'rc-1',
-    reelId: 'reel-1',
-    parentId: null,
-    authorId: 'user-3',
-    authorName: 'Omar Hassan',
-    authorNameAr: 'عمر حسن',
-    authorAvatar: '/avatars/omar.jpg',
-    text: 'ما شاء الله جميل جداً 🔥',
-    mentions: [],
-    createdAt: now - 1000 * 60 * 20,
-    likes: 12,
-    likedByMe: false,
-  },
-  {
-    id: 'rc-2',
-    reelId: 'reel-1',
-    parentId: null,
-    authorId: 'user-4',
-    authorName: 'Sara Mohamed',
-    authorNameAr: 'سارة محمد',
-    authorAvatar: '/avatars/sara.jpg',
-    text: '@fatima_ali شوفي دي 😍',
-    mentions: ['fatima_ali'],
-    createdAt: now - 1000 * 60 * 10,
-    likes: 4,
-    likedByMe: false,
-  },
-  {
-    id: 'rc-3',
-    reelId: 'reel-1',
-    parentId: 'rc-2',
-    authorId: 'user-2',
-    authorName: 'Fatima Ali',
-    authorNameAr: 'فاطمة علي',
-    authorAvatar: '/avatars/fatima.jpg',
-    text: '@sara_m شكراً يا قمر 💚',
-    mentions: ['sara_m'],
-    createdAt: now - 1000 * 60 * 8,
-    likes: 2,
-    likedByMe: false,
-  },
-]
+const demoComments: ReelComment[] = []
 
 // ----- Store -----
 

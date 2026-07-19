@@ -67,7 +67,14 @@ interface SouqState {
   listings: Listing[]
   setListings: (listings: Listing[]) => void
   addListing: (listing: Listing) => void
+  addListingToFirestore: (listing: Omit<Listing, 'id' | 'timestamp' | 'views' | 'status'>) => Promise<void>
+  subscribeToFirestoreListings: () => () => void
   updateListing: (id: string, updates: Partial<Listing>) => void
+
+  // Firebase connection status
+  firebaseStatus: 'unconfigured' | 'connecting' | 'connected' | 'error'
+  firebaseError: string | null
+  isLoading: boolean
   
   // Filters
   activeCategory: ListingCategory | 'all'
@@ -94,107 +101,87 @@ interface SouqState {
   setPostingStep: (step: 1 | 2 | 3) => void
 }
 
-// Demo listings
-const demoListings: Listing[] = [
-  {
-    id: 'listing-1',
-    sellerId: 'user-5',
-    sellerName: 'Khalid Ibrahim',
-    sellerAvatar: '/avatars/khalid.jpg',
-    sellerPhone: '+249912345678',
-    title: 'Toyota Corolla 2018',
-    titleAr: 'تويوتا كورولا 2018',
-    description: 'Excellent condition, low mileage, full service history.',
-    descriptionAr: 'حالة ممتازة، كيلومترات قليلة، صيانة كاملة.',
-    category: 'vehicles',
-    price: 450000,
-    currency: 'SDG',
-    images: ['/listings/corolla1.jpg', '/listings/corolla2.jpg'],
-    location: 'Khartoum 2',
-    locationAr: 'الخرطوم 2',
-    isBarter: false,
-    isAuction: false,
-    views: 234,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-    status: 'active',
-  },
-  {
-    id: 'listing-2',
-    sellerId: 'user-6',
-    sellerName: 'Mona Ahmed',
-    sellerAvatar: '/avatars/mona.jpg',
-    sellerPhone: '+249923456789',
-    title: 'iPhone 14 Pro Max',
-    titleAr: 'آيفون 14 برو ماكس',
-    description: 'Like new, with box and accessories. 256GB Space Black.',
-    descriptionAr: 'مثل الجديد، مع الكرتونة والإكسسوارات. 256 جيجا أسود.',
-    category: 'electronics',
-    price: 85000,
-    currency: 'SDG',
-    images: ['/listings/iphone.jpg'],
-    location: 'Omdurman',
-    locationAr: 'أم درمان',
-    isBarter: true,
-    barterFor: 'Samsung S23 Ultra',
-    isAuction: false,
-    views: 567,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12),
-    status: 'active',
-  },
-  {
-    id: 'listing-3',
-    sellerId: 'user-7',
-    sellerName: 'Hassan Omar',
-    sellerAvatar: '/avatars/hassan.jpg',
-    sellerPhone: '+249934567890',
-    title: 'Rickshaw Bajaj 2020',
-    titleAr: 'ركشة باجاج 2020',
-    description: 'Friday Auction! Great rickshaw for business.',
-    descriptionAr: 'مزاد الجمعة! ركشة ممتازة للشغل.',
-    category: 'rickshaws',
-    price: 150000,
-    currency: 'SDG',
-    images: ['/listings/rickshaw.jpg'],
-    location: 'Bahri',
-    locationAr: 'بحري',
-    isBarter: false,
-    isAuction: true,
-    auctionEndTime: new Date(Date.now() + 1000 * 60 * 60 * 48),
-    currentBid: 175000,
-    views: 890,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
-    status: 'active',
-  },
-  {
-    id: 'listing-4',
-    sellerId: 'user-8',
-    sellerName: 'Aisha Mohammed',
-    sellerAvatar: '/avatars/aisha.jpg',
-    sellerPhone: '+249945678901',
-    title: 'Apartment for Rent - 3BR',
-    titleAr: 'شقة للإيجار - 3 غرف',
-    description: 'Spacious apartment in Riyadh neighborhood. Families only.',
-    descriptionAr: 'شقة واسعة في حي الرياض. للعائلات فقط.',
-    category: 'property',
-    price: 25000,
-    currency: 'SDG',
-    images: ['/listings/apartment1.jpg', '/listings/apartment2.jpg'],
-    location: 'Khartoum - Riyadh',
-    locationAr: 'الخرطوم - الرياض',
-    isBarter: false,
-    isAuction: false,
-    views: 1234,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-    status: 'active',
-  },
-]
-
 export const useSouqStore = create<SouqState>()(
   persist(
     (set, get) => ({
-      listings: demoListings,
+      listings: [],
+      firebaseStatus: 'connecting',
+      firebaseError: null,
+      isLoading: false,
       setListings: (listings) => set({ listings }),
       addListing: (listing) => set((state) => ({ listings: [listing, ...state.listings] })),
+
+      // Add a new listing to Firestore (source of truth)
+      addListingToFirestore: async (listing) => {
+        if (!isFirestoreAvailable() || !db) {
+          throw new Error('firestore/unconfigured')
+        }
+        const listingsRef = collection(db, 'listings')
+        await addDoc(listingsRef, {
+          ...listing,
+          views: 0,
+          status: 'active',
+          timestamp: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        })
+        console.log('[v0] Listing added to Firestore successfully')
+      },
+
+      // Subscribe to real-time Firestore listings
+      subscribeToFirestoreListings: () => {
+        if (!isFirestoreAvailable() || !db) {
+          console.warn('[v0] Firestore not configured - no listings available')
+          set({ listings: [], isLoading: false, firebaseStatus: 'unconfigured' })
+          return () => {}
+        }
+
+        console.log('[v0] Subscribing to Firestore listings...')
+        set({ isLoading: true, firebaseStatus: 'connecting' })
+        const listingsRef = collection(db, 'listings')
+        const q = query(listingsRef, orderBy('timestamp', 'desc'))
+
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const firestoreListings: Listing[] = snapshot.docs.map((docSnap) => {
+              const data = docSnap.data()
+              return {
+                id: docSnap.id,
+                sellerId: data.sellerId || '',
+                sellerName: data.sellerName || '',
+                sellerAvatar: data.sellerAvatar || '',
+                sellerPhone: data.sellerPhone || '',
+                title: data.title || '',
+                titleAr: data.titleAr || data.title || '',
+                description: data.description || '',
+                descriptionAr: data.descriptionAr || data.description || '',
+                category: data.category || 'other',
+                price: data.price || 0,
+                currency: data.currency || 'SDG',
+                images: data.images || [],
+                location: data.location || '',
+                locationAr: data.locationAr || data.location || '',
+                isBarter: data.isBarter || false,
+                barterFor: data.barterFor,
+                isAuction: data.isAuction || false,
+                auctionEndTime: data.auctionEndTime?.toDate?.(),
+                currentBid: data.currentBid,
+                highestBidderId: data.highestBidderId,
+                views: data.views || 0,
+                timestamp: data.timestamp?.toDate?.() || new Date(),
+                status: data.status || 'active',
+              }
+            })
+            set({ listings: firestoreListings, isLoading: false, firebaseStatus: 'connected', firebaseError: null })
+          },
+          (error) => {
+            console.error('[v0] Error subscribing to Firestore listings:', error)
+            set({ isLoading: false, firebaseStatus: 'error', firebaseError: error.message })
+          },
+        )
+
+        return unsubscribe
+      },
       updateListing: (id, updates) =>
         set((state) => ({
           listings: state.listings.map(l => (l.id === id ? { ...l, ...updates } : l)),
@@ -239,8 +226,8 @@ export const useSouqStore = create<SouqState>()(
     {
       name: 'rakobatna-souq-storage',
       storage: createJSONStorage(() => localStorage),
+      // Listings come live from Firestore; only keep user-local prefs cached.
       partialize: (state) => ({
-        listings: state.listings,
         favorites: state.favorites,
         bids: state.bids,
       }),

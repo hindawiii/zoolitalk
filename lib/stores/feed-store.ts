@@ -119,55 +119,6 @@ interface FeedState {
   firebaseError: string | null
 }
 
-// Demo posts
-const demoPosts: Post[] = [
-  {
-    id: 'post-1',
-    authorId: 'user-2',
-    authorName: 'Fatima Ali',
-    authorNameAr: 'فاطمة علي',
-    authorAvatar: '/avatars/fatima.jpg',
-    content: 'Beautiful sunset over the Nile today! Nothing beats Khartoum evenings.',
-    contentAr: 'غروب جميل على النيل اليوم! ما في أحلى من ليالي الخرطوم.',
-    images: ['/posts/sunset-nile.jpg'],
-    reactions: { like: 45, love: 23, kaffu: 12, abshir: 5, haha: 2, sad: 0 },
-    userReaction: undefined,
-    commentsCount: 8,
-    sharesCount: 3,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    location: 'Khartoum, Sudan',
-  },
-  {
-    id: 'post-2',
-    authorId: 'user-3',
-    authorName: 'Omar Hassan',
-    authorNameAr: 'عمر حسن',
-    authorAvatar: '/avatars/omar.jpg',
-    content: 'Al-Hilal won again! What a match!',
-    contentAr: 'الهلال كسب تاني! يا سلام على الماتش!',
-    images: ['/posts/hilal-match.jpg', '/posts/hilal-fans.jpg'],
-    reactions: { like: 156, love: 89, kaffu: 67, abshir: 34, haha: 12, sad: 5 },
-    userReaction: 'kaffu',
-    commentsCount: 45,
-    sharesCount: 23,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
-  },
-  {
-    id: 'post-3',
-    authorId: 'user-4',
-    authorName: 'Amira Mohamed',
-    authorNameAr: 'أميرة محمد',
-    authorAvatar: '/avatars/amira.jpg',
-    content: 'Made traditional Kisra today! Family recipe passed down for generations.',
-    contentAr: 'عملت كسرة اليوم! وصفة العائلة من زمان.',
-    images: ['/posts/kisra.jpg'],
-    reactions: { like: 78, love: 45, kaffu: 23, abshir: 0, haha: 0, sad: 0 },
-    commentsCount: 12,
-    sharesCount: 8,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8),
-  },
-]
-
 // Demo trending hashtags
 const demoTrends: TrendingHashtag[] = [
   { id: 't1', tag: 'كورة_الهلال', tagAr: 'كورة_الهلال', zoolsCount: 4523, isHot: true, city: 'الخرطوم' },
@@ -262,30 +213,10 @@ const demoServices: LocalService[] = [
   },
 ]
 
-// Demo reels
-const demoReels: Post[] = [
-  {
-    id: 'reel-1',
-    authorId: 'user-5',
-    authorName: 'Yousif Ahmed',
-    authorNameAr: 'يوسف أحمد',
-    authorAvatar: '/avatars/yousif.jpg',
-    content: 'Sudanese coffee ritual',
-    contentAr: 'طقوس الجبنة السودانية',
-    images: [],
-    videoUrl: '/reels/coffee-ritual.mp4',
-    isReel: true,
-    reactions: { like: 234, love: 156, kaffu: 89, abshir: 45, haha: 12, sad: 0 },
-    commentsCount: 34,
-    sharesCount: 67,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12),
-  },
-]
-
 export const useFeedStore = create<FeedState>()(
   persist(
     (set, get) => ({
-      posts: demoPosts,
+      posts: [],
       setPosts: (posts) => set({ posts }),
       addPost: (post) => set((state) => ({ posts: [post, ...state.posts] })),
       
@@ -327,9 +258,9 @@ export const useFeedStore = create<FeedState>()(
         
         // If Firestore is not available, just use demo posts
         if (!isFirestoreAvailable() || !db) {
-          console.warn('[v0] Firestore not configured - using demo posts only')
+          console.warn('[v0] Firestore not configured - no posts available')
           set({ 
-            posts: demoPosts, 
+            posts: [], 
             isLoading: false,
             firebaseStatus: 'unconfigured',
             firebaseError: 'Firebase environment variables not configured'
@@ -372,15 +303,8 @@ export const useFeedStore = create<FeedState>()(
               }
             })
             
-            // Merge Firestore posts with demo posts, avoiding duplicates
-            const existingIds = new Set(firestorePosts.map(p => p.id))
-            const mergedPosts = [
-              ...firestorePosts,
-              ...demoPosts.filter(p => !existingIds.has(p.id)),
-            ]
-            
             set({ 
-              posts: mergedPosts, 
+              posts: firestorePosts, 
               isLoading: false,
               firebaseStatus: 'connected',
               firebaseError: null
@@ -464,7 +388,7 @@ export const useFeedStore = create<FeedState>()(
           },
         })),
       
-      reels: demoReels,
+      reels: [],
       currentReelIndex: 0,
       setCurrentReelIndex: (currentReelIndex) => set({ currentReelIndex }),
       
@@ -494,8 +418,9 @@ export const useFeedStore = create<FeedState>()(
     {
       name: 'rakobatna-feed-storage',
       storage: createJSONStorage(() => localStorage),
+      // Posts come live from Firestore (source of truth) and must not be
+      // cached in localStorage, otherwise stale/demo posts would reappear.
       partialize: (state) => ({
-        posts: state.posts,
         comments: state.comments,
       }),
     }

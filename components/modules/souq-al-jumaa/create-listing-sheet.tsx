@@ -25,6 +25,7 @@ import { useSouqStore, type ListingCategory, categoryLabels } from '@/lib/stores
 import { useUserStore } from '@/lib/stores/user-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface CreateListingSheetProps {
   open: boolean
@@ -35,7 +36,7 @@ type Step = 1 | 2 | 3
 
 export function CreateListingSheet({ open, onOpenChange }: CreateListingSheetProps) {
   const { isRTL, t } = useLanguage()
-  const { addListing } = useSouqStore()
+  const { addListingToFirestore } = useSouqStore()
   const { currentUser } = useUserStore()
   
   const [step, setStep] = React.useState<Step>(1)
@@ -96,32 +97,34 @@ export function CreateListingSheet({ open, onOpenChange }: CreateListingSheetPro
     if (!currentUser || !canSubmit) return
     
     setIsSubmitting(true)
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    
-    addListing({
-      title,
-      titleAr,
-      description,
-      descriptionAr,
-      price: Number(price),
-      category,
-      images,
-      location,
-      locationAr,
-      isBarter,
-      seller: {
-        id: currentUser.id,
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        isVerified: currentUser.isVerified,
-      },
-    })
-    
-    setIsSubmitting(false)
-    resetForm()
-    onOpenChange(false)
+
+    try {
+      await addListingToFirestore({
+        sellerId: currentUser.id,
+        sellerName: currentUser.nameAr || currentUser.name,
+        sellerAvatar: currentUser.avatar,
+        sellerPhone: currentUser.phone,
+        title: title || titleAr,
+        titleAr: titleAr || title,
+        description: description || descriptionAr,
+        descriptionAr: descriptionAr || description,
+        price: Number(price),
+        currency: 'SDG',
+        category,
+        images,
+        location: location || locationAr,
+        locationAr: locationAr || location,
+        isBarter,
+        isAuction: false,
+      })
+      resetForm()
+      onOpenChange(false)
+    } catch (error) {
+      console.error('[v0] Failed to publish listing:', error)
+      toast.error(isRTL ? 'ما قدرنا ننشر الإعلان، حاول تاني' : 'Could not publish listing, try again')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const stepTitles = {

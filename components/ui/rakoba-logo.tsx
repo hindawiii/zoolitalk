@@ -9,10 +9,10 @@ interface RakobaLogoProps {
 }
 
 const SIZE_PX: Record<NonNullable<RakobaLogoProps['size']>, number> = {
-  sm: 24,
-  md: 32,
-  lg: 48,
-  xl: 80,
+  sm: 36,
+  md: 48,
+  lg: 72,
+  xl: 120,
 }
 
 export function RakobaLogo({ className, size = 'md' }: RakobaLogoProps) {
@@ -20,7 +20,7 @@ export function RakobaLogo({ className, size = 'md' }: RakobaLogoProps) {
 
   return (
     <Image
-      src="/brand/rakobatna-logo.png"
+      src="/brand/rakobatna-mark.png"
       alt="راكوبتنا"
       width={px}
       height={px}
