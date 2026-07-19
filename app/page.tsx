@@ -1,7 +1,9 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { AppShell } from '@/components/shell/app-shell'
+import { AuthScreen } from '@/components/auth/auth-screen'
+import { useUserStore } from '@/lib/stores/user-store'
 
 // Loading fallback
 function AppLoader() {
@@ -16,6 +18,22 @@ function AppLoader() {
 }
 
 export default function HomePage() {
+  const isAuthenticated = useUserStore((s) => s.isAuthenticated)
+  const [mounted, setMounted] = useState(false)
+
+  // Avoid a hydration flash: wait for the persisted store to rehydrate
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return <AppLoader />
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen />
+  }
+
   return (
     <Suspense fallback={<AppLoader />}>
       <AppShell />

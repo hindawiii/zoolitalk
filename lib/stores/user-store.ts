@@ -249,7 +249,7 @@ export const useUserStore = create<UserState>()(
         setViewedUser(user)
       },
       
-      isAuthenticated: true, // Demo: start authenticated
+      isAuthenticated: false, // Start at the login screen
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       
       blockedUsers: [],
