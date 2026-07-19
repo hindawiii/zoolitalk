@@ -136,6 +136,26 @@ export async function sendPhoneCode(
   return signInWithPhoneNumber(auth, phoneE164, verifier)
 }
 
+/**
+ * Confirm an SMS code. On phone sign-up we also persist the display name the
+ * user typed, since phone auth does not capture it automatically.
+ */
+export async function confirmPhoneCode(
+  confirmation: ConfirmationResult,
+  code: string,
+  displayName?: string,
+): Promise<FirebaseUser> {
+  const cred = await confirmation.confirm(code)
+  if (displayName && !cred.user.displayName) {
+    try {
+      await updateProfile(cred.user, { displayName })
+    } catch {
+      /* non-fatal: profile will fall back to the phone number */
+    }
+  }
+  return cred.user
+}
+
 /* ----------------------- Session ----------------------- */
 
 export async function signOutUser(): Promise<void> {
