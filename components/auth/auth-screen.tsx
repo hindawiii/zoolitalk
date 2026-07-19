@@ -1,187 +1,303 @@
 'use client'
 
 import * as React from 'react'
-import { Mail, Lock, User, Eye, EyeOff, Coffee } from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, Coffee, Phone, ArrowRight } from 'lucide-react'
 import { RakobaLogo } from '@/components/ui/rakoba-logo'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { useUserStore } from '@/lib/stores/user-store'
 import { cn } from '@/lib/utils'
 
 type Mode = 'signin' | 'signup'
+type Method = 'email' | 'phone'
+type PhoneStep = 'enter' | 'otp'
 
 export function AuthScreen() {
   const setAuthenticated = useUserStore((s) => s.setAuthenticated)
+
   const [mode, setMode] = React.useState<Mode>('signin')
+  const [method, setMethod] = React.useState<Method>('email')
   const [showPassword, setShowPassword] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState('')
 
-  // Sign-in fields
-  const [signInEmail, setSignInEmail] = React.useState('')
-  const [signInPassword, setSignInPassword] = React.useState('')
-  const [signInError, setSignInError] = React.useState('')
-
-  // Sign-up fields
+  // Shared fields
   const [name, setName] = React.useState('')
-  const [signUpEmail, setSignUpEmail] = React.useState('')
-  const [signUpPassword, setSignUpPassword] = React.useState('')
-  const [signUpError, setSignUpError] = React.useState('')
+  const [email, setEmail] = React.useState('')
+  const [password, setPassword] = React.useState('')
+
+  // Phone flow
+  const [phone, setPhone] = React.useState('')
+  const [phoneStep, setPhoneStep] = React.useState<PhoneStep>('enter')
+  const [otp, setOtp] = React.useState('')
+
+  function resetErrors() {
+    setError('')
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next)
+    resetErrors()
+    setPhoneStep('enter')
+    setOtp('')
+  }
+
+  function switchMethod(next: Method) {
+    setMethod(next)
+    resetErrors()
+    setPhoneStep('enter')
+    setOtp('')
+  }
 
   function completeAuth() {
     setLoading(true)
-    // Simulate a quick auth round-trip, then enter the app
     window.setTimeout(() => {
       setAuthenticated(true)
       setLoading(false)
     }, 700)
   }
 
-  function handleSignIn(e: React.FormEvent) {
+  function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!signInEmail.trim() || !signInPassword.trim()) {
-      setSignInError('من فضلك دخّل البريد وكلمة السر')
+    if (mode === 'signup' && !name.trim()) {
+      setError('اكتب اسمك يا زول')
       return
     }
-    setSignInError('')
+    if (!email.trim() || !password.trim()) {
+      setError('من فضلك دخّل البريد وكلمة السر')
+      return
+    }
+    resetErrors()
     completeAuth()
   }
 
-  function handleSignUp(e: React.FormEvent) {
+  function handlePhoneContinue(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !signUpEmail.trim() || !signUpPassword.trim()) {
-      setSignUpError('كمّل بياناتك يا زول')
+    if (mode === 'signup' && !name.trim()) {
+      setError('اكتب اسمك يا زول')
       return
     }
-    setSignUpError('')
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length < 9) {
+      setError('اكتب رقم هاتف صحيح')
+      return
+    }
+    resetErrors()
+    setLoading(true)
+    window.setTimeout(() => {
+      setLoading(false)
+      setPhoneStep('otp')
+    }, 700)
+  }
+
+  function handleOtpSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (otp.length < 6) {
+      setError('اكتب رمز التحقق كامل')
+      return
+    }
+    resetErrors()
     completeAuth()
   }
+
+  const isSignup = mode === 'signup'
 
   return (
-    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background p-2 sm:p-4">
+    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background px-4 py-6">
       {/* Sudanese pattern backdrop */}
-      <div className="rakoba-pattern pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+      <div className="rakoba-pattern pointer-events-none absolute inset-0 opacity-50" aria-hidden />
       <div
-        className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary/15 blur-3xl"
+        className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-accent/15 blur-3xl"
+        className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
         aria-hidden
       />
 
-      <div dir="ltr" className={cn('auth-card font-arabic', mode === 'signup' && 'is-signup')}>
-        {/* ---------- Sign In form ---------- */}
-        <div className="auth-panel auth-panel--signin">
-          <form onSubmit={handleSignIn} className="flex w-full max-w-xs flex-col items-center gap-2.5">
-            <h2 className="text-xl font-extrabold text-foreground">تسجيل الدخول</h2>
-            <SocialRow />
-            <Divider>أو استخدم بريدك</Divider>
+      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl shadow-black/30 font-arabic">
+        {/* ---------- Welcome hero (moved to top) ---------- */}
+        <div className="auth-hero rakoba-pattern relative flex flex-col items-center gap-2 px-6 pb-6 pt-7 text-center">
+          <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
+            <RakobaLogo size="sm" />
+            <span className="auth-neon text-sm font-extrabold tracking-wide text-white">راكوبتنا</span>
+          </div>
+          <h1 className="text-balance text-xl font-extrabold text-white">أهلاً بيك في راكوبتنا</h1>
+          <p className="max-w-[18rem] text-pretty text-[13px] leading-relaxed text-white/85">
+            سجّل وانضم لأكبر راكوبة رقمية سودانية
+          </p>
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/75">
+            <Coffee className="h-3.5 w-3.5" />
+            <span>اتفضّل استريّح في الراكوبة</span>
+          </div>
+        </div>
 
-            <FieldInput
-              icon={<Mail className="h-4 w-4" />}
-              type="email"
-              placeholder="البريد الإلكتروني"
-              value={signInEmail}
-              onChange={(v) => setSignInEmail(v)}
-              autoComplete="email"
-            />
-            <FieldInput
-              icon={<Lock className="h-4 w-4" />}
-              type={showPassword ? 'text' : 'password'}
-              placeholder="كلمة السر"
-              value={signInPassword}
-              onChange={(v) => setSignInPassword(v)}
-              autoComplete="current-password"
-              trailing={
+        {/* ---------- Body ---------- */}
+        <div className="flex flex-col gap-4 px-5 py-5 sm:px-6">
+          {/* Mode switch */}
+          <div className="flex rounded-full border border-border bg-muted/60 p-1" role="tablist">
+            <SegmentButton active={!isSignup} onClick={() => switchMode('signin')}>
+              تسجيل الدخول
+            </SegmentButton>
+            <SegmentButton active={isSignup} onClick={() => switchMode('signup')}>
+              حساب جديد
+            </SegmentButton>
+          </div>
+
+          {/* Method toggle */}
+          <div className="flex items-center justify-center gap-1 text-xs">
+            <MethodTab active={method === 'email'} onClick={() => switchMethod('email')} icon={<Mail className="h-3.5 w-3.5" />}>
+              البريد الإلكتروني
+            </MethodTab>
+            <MethodTab active={method === 'phone'} onClick={() => switchMethod('phone')} icon={<Phone className="h-3.5 w-3.5" />}>
+              رقم الهاتف
+            </MethodTab>
+          </div>
+
+          {/* ---------- Email form ---------- */}
+          {method === 'email' && (
+            <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+              {isSignup && (
+                <FieldInput
+                  icon={<User className="h-4 w-4" />}
+                  type="text"
+                  placeholder="اسمك يا زول"
+                  value={name}
+                  onChange={setName}
+                  autoComplete="name"
+                />
+              )}
+              <FieldInput
+                icon={<Mail className="h-4 w-4" />}
+                type="email"
+                placeholder="البريد الإلكتروني"
+                value={email}
+                onChange={setEmail}
+                autoComplete="email"
+              />
+              <FieldInput
+                icon={<Lock className="h-4 w-4" />}
+                type={showPassword ? 'text' : 'password'}
+                placeholder="كلمة السر"
+                value={password}
+                onChange={setPassword}
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label={showPassword ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+              />
+
+              {!isSignup && (
                 <button
                   type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label={showPassword ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
+                  className="self-start text-xs text-muted-foreground transition-colors hover:text-primary"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  نسيت كلمة السر؟
                 </button>
-              }
-            />
+              )}
 
-            {signInError && <p className="text-xs font-medium text-destructive">{signInError}</p>}
+              {error && <ErrorText>{error}</ErrorText>}
 
-            <button
-              type="button"
-              className="self-end text-xs text-muted-foreground transition-colors hover:text-primary"
-            >
-              نسيت كلمة السر؟
-            </button>
+              <SubmitButton loading={loading}>{isSignup ? 'إنشاء الحساب' : 'دخول'}</SubmitButton>
+            </form>
+          )}
 
-            <SubmitButton loading={loading}>دخول</SubmitButton>
-          </form>
-        </div>
+          {/* ---------- Phone form ---------- */}
+          {method === 'phone' && phoneStep === 'enter' && (
+            <form onSubmit={handlePhoneContinue} className="flex flex-col gap-3">
+              {isSignup && (
+                <FieldInput
+                  icon={<User className="h-4 w-4" />}
+                  type="text"
+                  placeholder="اسمك يا زول"
+                  value={name}
+                  onChange={setName}
+                  autoComplete="name"
+                />
+              )}
 
-        {/* ---------- Sign Up form ---------- */}
-        <div className="auth-panel auth-panel--signup">
-          <form onSubmit={handleSignUp} className="flex w-full max-w-xs flex-col items-center gap-2.5">
-            <h2 className="text-xl font-extrabold text-foreground">إنشاء حساب</h2>
-            <SocialRow />
-            <Divider>أو سجّل ببريدك</Divider>
+              <div className="flex w-full items-center gap-2 rounded-xl border border-input bg-muted/60 px-3 py-2.5 transition-colors focus-within:border-primary focus-within:bg-muted">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <input
+                  dir="ltr"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="9x xxx xxxx"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                  className="min-w-0 flex-1 bg-transparent text-left text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                />
+                <span className="shrink-0 rounded-md bg-background px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                  249+
+                </span>
+              </div>
 
-            <FieldInput
-              icon={<User className="h-4 w-4" />}
-              type="text"
-              placeholder="اسمك يا زول"
-              value={name}
-              onChange={(v) => setName(v)}
-              autoComplete="name"
-            />
-            <FieldInput
-              icon={<Mail className="h-4 w-4" />}
-              type="email"
-              placeholder="البريد الإلكتروني"
-              value={signUpEmail}
-              onChange={(v) => setSignUpEmail(v)}
-              autoComplete="email"
-            />
-            <FieldInput
-              icon={<Lock className="h-4 w-4" />}
-              type={showPassword ? 'text' : 'password'}
-              placeholder="كلمة السر"
-              value={signUpPassword}
-              onChange={(v) => setSignUpPassword(v)}
-              autoComplete="new-password"
-            />
+              {error && <ErrorText>{error}</ErrorText>}
 
-            {signUpError && <p className="text-xs font-medium text-destructive">{signUpError}</p>}
+              <SubmitButton loading={loading}>
+                <span className="flex items-center gap-2">
+                  إرسال رمز التحقق
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </SubmitButton>
+            </form>
+          )}
 
-            <SubmitButton loading={loading}>تسجيل</SubmitButton>
-          </form>
-        </div>
+          {method === 'phone' && phoneStep === 'otp' && (
+            <form onSubmit={handleOtpSubmit} className="flex flex-col items-center gap-3">
+              <p className="text-center text-xs text-muted-foreground">
+                أرسلنا رمز مكوّن من 6 أرقام إلى
+                <span dir="ltr" className="mx-1 font-semibold text-foreground">
+                  +249 {phone}
+                </span>
+              </p>
 
-        {/* ---------- Colored overlay ---------- */}
-        <div className="auth-overlay-container">
-          <div className="auth-overlay rakoba-pattern">
-            {/* Panel shown while in sign-up mode → invites back to sign-in */}
-            <div className="auth-overlay-panel auth-overlay-panel--back font-arabic">
-              <OverlayContent
-                title="أهلاً بعودتك يا زول"
-                subtitle="عندك حساب أصلاً؟ ادخل وواصل الونسة معانا"
-                buttonLabel="تسجيل الدخول"
+              <div dir="ltr">
+                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                  <InputOTPGroup className="gap-1.5">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <InputOTPSlot
+                        key={i}
+                        index={i}
+                        className="h-11 w-9 rounded-lg border-input text-base"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              {error && <ErrorText>{error}</ErrorText>}
+
+              <SubmitButton loading={loading}>تأكيد الرمز</SubmitButton>
+
+              <button
+                type="button"
                 onClick={() => {
-                  setMode('signin')
-                  setSignUpError('')
+                  setPhoneStep('enter')
+                  setOtp('')
+                  resetErrors()
                 }}
-              />
-            </div>
+                className="text-xs text-muted-foreground transition-colors hover:text-primary"
+              >
+                تغيير رقم الهاتف
+              </button>
+            </form>
+          )}
 
-            {/* Panel shown while in sign-in mode → invites to sign-up */}
-            <div className="auth-overlay-panel auth-overlay-panel--join font-arabic">
-              <OverlayContent
-                title="أهلاً بيك في راكوبتنا"
-                subtitle="ما عندك حساب؟ سجّل وانضم لأكبر راكوبة رقمية سودانية"
-                buttonLabel="حساب جديد"
-                onClick={() => {
-                  setMode('signup')
-                  setSignInError('')
-                }}
-              />
-            </div>
-          </div>
+          {/* ---------- Social ---------- */}
+          {!(method === 'phone' && phoneStep === 'otp') && (
+            <>
+              <Divider>أو تابع عبر</Divider>
+              <SocialRow />
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -190,40 +306,63 @@ export function AuthScreen() {
 
 /* ---------- Sub-components ---------- */
 
-function OverlayContent({
-  title,
-  subtitle,
-  buttonLabel,
+function SegmentButton({
+  active,
   onClick,
+  children,
 }: {
-  title: string
-  subtitle: string
-  buttonLabel: string
+  active: boolean
   onClick: () => void
+  children: React.ReactNode
 }) {
   return (
-    <>
-      <div className="mb-4 flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
-        <RakobaLogo size="sm" />
-        <span className="auth-neon text-sm font-extrabold tracking-wide text-white">راكوبتنا</span>
-      </div>
-      <h2 className="text-balance text-2xl font-extrabold text-white">{title}</h2>
-      <p className="mt-2 max-w-[16rem] text-pretty text-sm leading-relaxed text-white/85">
-        {subtitle}
-      </p>
-      <button
-        type="button"
-        onClick={onClick}
-        className="mt-5 rounded-full border-2 border-white/80 px-8 py-2 text-sm font-bold text-white transition-all hover:bg-white hover:text-primary active:scale-95"
-      >
-        {buttonLabel}
-      </button>
-      <div className="mt-4 flex items-center gap-1.5 text-xs text-white/70">
-        <Coffee className="h-3.5 w-3.5" />
-        <span>اتفضّل استريّح في الراكوبة</span>
-      </div>
-    </>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        'flex-1 rounded-full py-2 text-sm font-bold transition-all',
+        active
+          ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+          : 'text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {children}
+    </button>
   )
+}
+
+function MethodTab({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold transition-all',
+        active
+          ? 'bg-secondary text-secondary-foreground'
+          : 'text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  )
+}
+
+function ErrorText({ children }: { children: React.ReactNode }) {
+  return <p className="text-center text-xs font-medium text-destructive">{children}</p>
 }
 
 const SOCIALS = [
@@ -235,16 +374,16 @@ const SOCIALS = [
 
 function SocialRow() {
   return (
-    <div className="flex items-center justify-center gap-2.5">
+    <div className="flex items-center justify-center gap-3">
       {SOCIALS.map((s) => (
         <button
           key={s.label}
           type="button"
-          aria-label={`الدخول عبر ${s.label}`}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-card transition-all hover:border-primary hover:bg-muted active:scale-95"
+          aria-label={`المتابعة عبر ${s.label}`}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-input bg-muted/40 transition-all hover:border-primary hover:bg-muted active:scale-95"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={s.src || '/placeholder.svg'} alt="" className="h-4 w-4" />
+          <img src={s.src || '/placeholder.svg'} alt="" className="h-5 w-5" />
         </button>
       ))}
     </div>
@@ -253,7 +392,7 @@ function SocialRow() {
 
 function Divider({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex w-full items-center gap-2 text-[11px] text-muted-foreground">
+    <div className="flex w-full items-center gap-3 text-[11px] text-muted-foreground">
       <span className="h-px flex-1 bg-border" />
       <span>{children}</span>
       <span className="h-px flex-1 bg-border" />
@@ -279,7 +418,7 @@ function FieldInput({
   autoComplete?: string
 }) {
   return (
-    <div className="flex w-full items-center gap-2 rounded-xl border border-input bg-muted/60 px-3 py-2 transition-colors focus-within:border-primary focus-within:bg-muted">
+    <div className="flex w-full items-center gap-2 rounded-xl border border-input bg-muted/60 px-3 py-2.5 transition-colors focus-within:border-primary focus-within:bg-muted">
       <span className="text-muted-foreground">{icon}</span>
       <input
         dir="rtl"
