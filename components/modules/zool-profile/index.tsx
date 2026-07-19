@@ -4,7 +4,6 @@ import * as React from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Settings, 
   Grid3X3, 
   Heart, 
   Bookmark, 
@@ -31,7 +30,6 @@ import {
   ChevronDown,
   ArrowLeft,
   ArrowRight,
-  Archive,
   User as UserIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -55,12 +53,14 @@ import {
 import { useUserStore, type SocialStatus, type ProfessionalStatus, type ReceivedGift, type UserRank, type Gender, type User } from '@/lib/stores/user-store'
 import { useAppStore } from '@/lib/stores/app-store'
 import { useChatStore } from '@/lib/stores/chat-store'
+import { useFeedStore } from '@/lib/stores/feed-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
 import { SOCIAL_STATUS_LABELS, PROFESSIONAL_STATUS_LABELS, RANK_LABELS } from '@/lib/gender-utils'
 import { useImageCrop } from '@/components/shared/use-image-crop'
 import { ImageViewer, type ImageViewerData } from '@/components/shared/image-viewer'
-import { StoryHighlights, StoryArchiveTab } from './story-section'
+import { StoryHighlights } from './story-section'
+import { StoryComposer } from '@/components/modules/al-saha/stories/story-composer'
 import { cn } from '@/lib/utils'
 
 // Professional Status Icons (labels come from gender-utils)
@@ -114,24 +114,13 @@ const RAKOBA_GIFTS = {
   ],
 }
 
-// Gallery item type
+// Gallery item type (derived from the user's real posts)
 interface GalleryItem {
   id: string
-  type: 'image' | 'video'
   url: string
   thumbnail: string
   likes: number
 }
-
-// Mock gallery data
-const mockGallery: GalleryItem[] = [
-  { id: '1', type: 'image', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', thumbnail: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200', likes: 234 },
-  { id: '2', type: 'image', url: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400', thumbnail: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200', likes: 567 },
-  { id: '3', type: 'image', url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400', thumbnail: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200', likes: 123 },
-  { id: '4', type: 'image', url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400', thumbnail: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=200', likes: 890 },
-  { id: '5', type: 'image', url: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=400', thumbnail: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=200', likes: 456 },
-  { id: '6', type: 'image', url: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400', thumbnail: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=200', likes: 678 },
-]
 
 // Animated Avatar Frame Component
 function AnimatedAvatarFrame({ 
@@ -261,11 +250,13 @@ export default function ZoolProfile() {
   const { currentUser, followingIds, updateProfile, viewedUser, setViewedUser, loadUserProfile } = useUserStore()
   const { setSettingsOpen, triggerGift, viewingUserId, setViewingUserId, setActiveTab: setAppActiveTab } = useAppStore()
   const { chats, setActiveChatId } = useChatStore()
+  const posts = useFeedStore((s) => s.posts)
   const { socialStatus, professionalStatus, rank } = useGender()
   const [activeTab, setActiveTab] = React.useState('posts')
   const [selectedImage, setSelectedImage] = React.useState<ImageViewerData | null>(null)
   const [giftsLoaded, setGiftsLoaded] = React.useState(false)
   const [highlightsLoaded, setHighlightsLoaded] = React.useState(false)
+  const [storyComposerOpen, setStoryComposerOpen] = React.useState(false)
   
   // Determine which user to display
   const isViewingOtherUser = viewingUserId && viewingUserId !== currentUser?.id
@@ -338,11 +329,31 @@ export default function ZoolProfile() {
   const coverSrc = isRealImage(displayUser?.coverPhoto) ? displayUser?.coverPhoto : undefined
   const avatarSrc = isRealImage(displayUser?.avatar) ? displayUser?.avatar : undefined
 
+  // Real posts authored by the displayed user (source of truth for the grid + count)
+  const userPosts = React.useMemo(
+    () => posts.filter((p) => p.authorId && p.authorId === displayUser?.id),
+    [posts, displayUser?.id],
+  )
+
+  // Flatten post images into gallery tiles
+  const galleryItems: GalleryItem[] = React.useMemo(
+    () =>
+      userPosts.flatMap((p) =>
+        (p.images ?? []).map((url, i) => ({
+          id: `${p.id}-${i}`,
+          url,
+          thumbnail: url,
+          likes: Object.values(p.reactions ?? {}).reduce((a, b) => a + b, 0),
+        })),
+      ),
+    [userPosts],
+  )
+
   const stats = [
-    { label: isRTL ? 'منشورات' : 'Posts', value: mockGallery.length },
-    { label: isRTL ? 'متابعين' : 'Followers', value: displayUser?.followers ?? 1234 },
+    { label: isRTL ? 'منشورات' : 'Posts', value: displayUser?.postsCount || userPosts.length },
+    { label: isRTL ? 'متابعين' : 'Followers', value: displayUser?.followers ?? 0 },
     { label: isRTL ? 'متابَع' : 'Following', value: displayUser?.following ?? followingIds.length },
-    { label: isRTL ? 'نقاط' : 'Points', value: displayUser?.zoolPoints ?? 2500 },
+    { label: isRTL ? 'نقاط' : 'Points', value: displayUser?.zoolPoints ?? 0 },
   ]
   
   const BackIcon = isRTL ? ArrowRight : ArrowLeft
@@ -409,18 +420,6 @@ export default function ZoolProfile() {
                 </Button>
               )}
 
-              {/* Settings Button (own profile only) */}
-              {isOwnProfile && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-3 bg-black/30 backdrop-blur-sm hover:bg-black/50 end-3 z-10"
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  <Settings className="h-5 w-5 text-white" />
-                </Button>
-              )}
-
               {/* Change Photo dropdown (own profile only) */}
               {isOwnProfile && (
                 <DropdownMenu>
@@ -442,6 +441,11 @@ export default function ZoolProfile() {
                     <DropdownMenuItem onClick={handleChangeCover}>
                       <ImagePlus className="h-4 w-4 me-2" />
                       {isRTL ? 'تغيير صورة الخلفية' : 'Change cover photo'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setStoryComposerOpen(true)}>
+                      <Sparkles className="h-4 w-4 me-2 text-[#C9A227]" />
+                      {isRTL ? 'إضافة إلى قصتك' : 'Add to your story'}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -479,16 +483,29 @@ export default function ZoolProfile() {
                   </button>
                 </AnimatedAvatarFrame>
 
-                {/* Change Avatar Button (own profile only) */}
+                {/* Avatar actions (own profile only): change picture or add a story */}
                 {isOwnProfile && (
-                  <button
-                    type="button"
-                    onClick={handleChangeAvatar}
-                    aria-label={isRTL ? 'تغيير الصورة الشخصية' : 'Change profile picture'}
-                    className="absolute bottom-1 end-1 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-[#2D5A27] text-white shadow-md transition-colors hover:bg-[#3a7332]"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={isRTL ? 'خيارات الصورة الشخصية' : 'Profile picture options'}
+                        className="absolute bottom-1 end-1 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-[#2D5A27] text-white shadow-md transition-colors hover:bg-[#3a7332]"
+                      >
+                        <Camera className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="font-arabic">
+                      <DropdownMenuItem onClick={handleChangeAvatar}>
+                        <UserIcon className="h-4 w-4 me-2" />
+                        {isRTL ? 'تغيير الصورة الشخصية' : 'Change profile picture'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStoryComposerOpen(true)}>
+                        <Sparkles className="h-4 w-4 me-2 text-[#C9A227]" />
+                        {isRTL ? 'إضافة إلى قصتك' : 'Add to your story'}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
               
@@ -794,12 +811,6 @@ export default function ZoolProfile() {
                 <Heart className="h-5 w-5" />
               </TabsTrigger>
               <TabsTrigger 
-                value="archive" 
-                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[#2D5A27] data-[state=active]:bg-transparent"
-              >
-                <Archive className="h-5 w-5" />
-              </TabsTrigger>
-              <TabsTrigger 
                 value="saved" 
                 className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[#2D5A27] data-[state=active]:bg-transparent"
               >
@@ -808,9 +819,9 @@ export default function ZoolProfile() {
             </TabsList>
 
             <TabsContent value="posts" className="mt-0 w-full">
-              {mockGallery.length > 0 ? (
+              {galleryItems.length > 0 ? (
                 <div className="grid grid-cols-3 gap-0.5 w-full">
-                  {mockGallery.map((item) => (
+                  {galleryItems.map((item) => (
                     <button
                       key={item.id}
                       className="relative aspect-square bg-secondary overflow-hidden hover:opacity-90 transition-opacity"
@@ -852,10 +863,6 @@ export default function ZoolProfile() {
               />
             </TabsContent>
 
-            <TabsContent value="archive" className="mt-0 w-full">
-              <StoryArchiveTab isOwnProfile={isOwnProfile} />
-            </TabsContent>
-
             <TabsContent value="saved" className="mt-0 w-full">
               <EmptyState 
                 icon={Bookmark}
@@ -876,6 +883,12 @@ export default function ZoolProfile() {
 
         {/* Crop editor portal (shared) */}
         {cropPortal}
+
+        {/* Story composer (opened from the avatar menu) */}
+        <StoryComposer
+          open={storyComposerOpen}
+          onClose={() => setStoryComposerOpen(false)}
+        />
       </div>
     </TooltipProvider>
   )
