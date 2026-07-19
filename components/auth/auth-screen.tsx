@@ -75,7 +75,15 @@ export function AuthScreen() {
   }
 
   function completeAuth() {
-    setAuthenticated(true)
+    if (isFirebaseConfigured) {
+      // The Firebase auth watcher (in app/page.tsx) will load the real
+      // profile and flip isAuthenticated once it's ready. Show the loader
+      // meanwhile to avoid a flash back to this screen.
+      useUserStore.setState({ authLoading: true })
+    } else {
+      // Demo mode only (Firebase keys not set).
+      setAuthenticated(true)
+    }
   }
 
   const configured = isFirebaseConfigured
