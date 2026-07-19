@@ -55,7 +55,7 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background p-4">
+    <div className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background p-2 sm:p-4">
       {/* Sudanese pattern backdrop */}
       <div className="rakoba-pattern pointer-events-none absolute inset-0 opacity-60" aria-hidden />
       <div
@@ -70,9 +70,10 @@ export function AuthScreen() {
       <div dir="ltr" className={cn('auth-card font-arabic', mode === 'signup' && 'is-signup')}>
         {/* ---------- Sign In form ---------- */}
         <div className="auth-panel auth-panel--signin">
-          <form onSubmit={handleSignIn} className="flex w-full max-w-xs flex-col items-center gap-3">
-            <h2 className="text-2xl font-extrabold text-foreground">تسجيل الدخول</h2>
-            <p className="text-xs text-muted-foreground">ادخل ببريدك وكلمة السر</p>
+          <form onSubmit={handleSignIn} className="flex w-full max-w-xs flex-col items-center gap-2.5">
+            <h2 className="text-xl font-extrabold text-foreground">تسجيل الدخول</h2>
+            <SocialRow />
+            <Divider>أو استخدم بريدك</Divider>
 
             <FieldInput
               icon={<Mail className="h-4 w-4" />}
@@ -116,9 +117,10 @@ export function AuthScreen() {
 
         {/* ---------- Sign Up form ---------- */}
         <div className="auth-panel auth-panel--signup">
-          <form onSubmit={handleSignUp} className="flex w-full max-w-xs flex-col items-center gap-3">
-            <h2 className="text-2xl font-extrabold text-foreground">إنشاء حساب</h2>
-            <p className="text-xs text-muted-foreground">انضم لأكبر راكوبة رقمية</p>
+          <form onSubmit={handleSignUp} className="flex w-full max-w-xs flex-col items-center gap-2.5">
+            <h2 className="text-xl font-extrabold text-foreground">إنشاء حساب</h2>
+            <SocialRow />
+            <Divider>أو سجّل ببريدك</Divider>
 
             <FieldInput
               icon={<User className="h-4 w-4" />}
@@ -224,6 +226,41 @@ function OverlayContent({
   )
 }
 
+const SOCIALS = [
+  { src: '/brand/google.svg', label: 'Google' },
+  { src: '/brand/facebook.svg', label: 'Facebook' },
+  { src: '/brand/github.svg', label: 'GitHub' },
+  { src: '/brand/linkedin.svg', label: 'LinkedIn' },
+]
+
+function SocialRow() {
+  return (
+    <div className="flex items-center justify-center gap-2.5">
+      {SOCIALS.map((s) => (
+        <button
+          key={s.label}
+          type="button"
+          aria-label={`الدخول عبر ${s.label}`}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-input bg-card transition-all hover:border-primary hover:bg-muted active:scale-95"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={s.src || '/placeholder.svg'} alt="" className="h-4 w-4" />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Divider({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex w-full items-center gap-2 text-[11px] text-muted-foreground">
+      <span className="h-px flex-1 bg-border" />
+      <span>{children}</span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  )
+}
+
 function FieldInput({
   icon,
   trailing,
@@ -242,7 +279,7 @@ function FieldInput({
   autoComplete?: string
 }) {
   return (
-    <div className="flex w-full items-center gap-2 rounded-xl border border-input bg-muted/60 px-3 py-2.5 transition-colors focus-within:border-primary focus-within:bg-muted">
+    <div className="flex w-full items-center gap-2 rounded-xl border border-input bg-muted/60 px-3 py-2 transition-colors focus-within:border-primary focus-within:bg-muted">
       <span className="text-muted-foreground">{icon}</span>
       <input
         dir="rtl"
