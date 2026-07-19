@@ -13,6 +13,7 @@ import {
   googleSignIn,
   facebookSignIn,
   sendPhoneCode,
+  confirmPhoneCode,
   resetRecaptcha,
   authErrorMessage,
   type ConfirmationResult,
@@ -227,13 +228,32 @@ export function AuthScreen() {
     try {
       if (!confirmationRef.current) {
         setError('انتهت الجلسة، اطلب رمز جديد')
+        setPhoneStep('enter')
+        setOtp('')
+        setResendIn(0)
         setLoading(false)
         return
       }
-      await confirmationRef.current.confirm(otp)
+      await confirmPhoneCode(
+        confirmationRef.current,
+        otp,
+        isSignup ? name.trim() : undefined,
+      )
       completeAuth()
     } catch (err) {
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code: unknown }).code)
+          : ''
       setError(authErrorMessage(err))
+      // Clear the wrong code so the user can retype it.
+      setOtp('')
+      // If the code expired, send them back to request a fresh one.
+      if (code === 'auth/code-expired') {
+        confirmationRef.current = null
+        setPhoneStep('enter')
+        setResendIn(0)
+      }
     } finally {
       setLoading(false)
     }
@@ -373,7 +393,10 @@ export function AuthScreen() {
                   inputMode="tel"
                   placeholder="9x xxx xxxx"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value)
+                    if (error) resetErrors()
+                  }}
                   autoComplete="tel"
                   className="min-w-0 flex-1 bg-transparent text-left text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
@@ -403,7 +426,14 @@ export function AuthScreen() {
               </p>
 
               <div dir="ltr">
-                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={(v) => {
+                    setOtp(v)
+                    if (error) resetErrors()
+                  }}
+                >
                   <InputOTPGroup className="gap-1.5">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <InputOTPSlot

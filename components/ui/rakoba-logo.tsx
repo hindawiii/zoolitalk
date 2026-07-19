@@ -25,7 +25,12 @@ export function RakobaLogo({ className, size = 'md' }: RakobaLogoProps) {
       width={px}
       height={px}
       priority
-      className={cn('object-contain', className)}
+      quality={90}
+      sizes={`${px}px`}
+      className={cn(
+        'select-none object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]',
+        className,
+      )}
       style={{ width: px, height: px }}
     />
   )
