@@ -6,10 +6,24 @@ import { RakobaLogo } from '@/components/ui/rakoba-logo'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { useUserStore } from '@/lib/stores/user-store'
 import { cn } from '@/lib/utils'
+import {
+  isFirebaseConfigured,
+  emailSignIn,
+  emailSignUp,
+  googleSignIn,
+  facebookSignIn,
+  sendPhoneCode,
+  resetRecaptcha,
+  authErrorMessage,
+  type ConfirmationResult,
+} from '@/lib/firebase/auth'
 
 type Mode = 'signin' | 'signup'
 type Method = 'email' | 'phone'
 type PhoneStep = 'enter' | 'otp'
+
+const RESEND_SECONDS = 45
+const RECAPTCHA_ID = 'rakoba-recaptcha'
 
 export function AuthScreen() {
   const setAuthenticated = useUserStore((s) => s.setAuthenticated)
@@ -18,6 +32,7 @@ export function AuthScreen() {
   const [method, setMethod] = React.useState<Method>('email')
   const [showPassword, setShowPassword] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+  const [socialLoading, setSocialLoading] = React.useState<'google' | 'facebook' | null>(null)
   const [error, setError] = React.useState('')
 
   // Shared fields
@@ -29,6 +44,17 @@ export function AuthScreen() {
   const [phone, setPhone] = React.useState('')
   const [phoneStep, setPhoneStep] = React.useState<PhoneStep>('enter')
   const [otp, setOtp] = React.useState('')
+  const [resendIn, setResendIn] = React.useState(0)
+  const confirmationRef = React.useRef<ConfirmationResult | null>(null)
+
+  // Countdown for the resend button
+  React.useEffect(() => {
+    if (resendIn <= 0) return
+    const t = window.setInterval(() => {
+      setResendIn((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => window.clearInterval(t)
+  }, [resendIn])
 
   function resetErrors() {
     setError('')
@@ -49,14 +75,13 @@ export function AuthScreen() {
   }
 
   function completeAuth() {
-    setLoading(true)
-    window.setTimeout(() => {
-      setAuthenticated(true)
-      setLoading(false)
-    }, 700)
+    setAuthenticated(true)
   }
 
-  function handleEmailSubmit(e: React.FormEvent) {
+  const configured = isFirebaseConfigured
+
+  /* ---------------- Email / Password ---------------- */
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (mode === 'signup' && !name.trim()) {
       setError('اكتب اسمك يا زول')
@@ -67,36 +92,143 @@ export function AuthScreen() {
       return
     }
     resetErrors()
-    completeAuth()
+    setLoading(true)
+
+    // Demo fallback when Firebase keys are not set yet
+    if (!configured) {
+      window.setTimeout(() => {
+        setLoading(false)
+        completeAuth()
+      }, 700)
+      return
+    }
+
+    try {
+      if (mode === 'signup') {
+        await emailSignUp(email.trim(), password, name.trim())
+      } else {
+        await emailSignIn(email.trim(), password)
+      }
+      completeAuth()
+    } catch (err) {
+      setError(authErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function handlePhoneContinue(e: React.FormEvent) {
+  /* ---------------- Social ---------------- */
+  async function handleSocial(provider: 'google' | 'facebook') {
+    resetErrors()
+
+    if (!configured) {
+      setSocialLoading(provider)
+      window.setTimeout(() => {
+        setSocialLoading(null)
+        completeAuth()
+      }, 700)
+      return
+    }
+
+    setSocialLoading(provider)
+    try {
+      if (provider === 'google') await googleSignIn()
+      else await facebookSignIn()
+      completeAuth()
+    } catch (err) {
+      setError(authErrorMessage(err))
+    } finally {
+      setSocialLoading(null)
+    }
+  }
+
+  /* ---------------- Phone ---------------- */
+  function toE164(raw: string) {
+    const digits = raw.replace(/\D/g, '').replace(/^0+/, '')
+    return `+249${digits}`
+  }
+
+  async function requestCode() {
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length < 9) {
+      setError('اكتب رقم هاتف صحيح')
+      return false
+    }
+    resetErrors()
+
+    if (!configured) {
+      // Demo fallback
+      return new Promise<boolean>((resolve) => {
+        window.setTimeout(() => resolve(true), 700)
+      })
+    }
+
+    try {
+      resetRecaptcha()
+      const confirmation = await sendPhoneCode(toE164(phone), RECAPTCHA_ID)
+      confirmationRef.current = confirmation
+      return true
+    } catch (err) {
+      resetRecaptcha()
+      setError(authErrorMessage(err))
+      return false
+    }
+  }
+
+  async function handlePhoneContinue(e: React.FormEvent) {
     e.preventDefault()
     if (mode === 'signup' && !name.trim()) {
       setError('اكتب اسمك يا زول')
       return
     }
-    const digits = phone.replace(/\D/g, '')
-    if (digits.length < 9) {
-      setError('اكتب رقم هاتف صحيح')
-      return
-    }
-    resetErrors()
     setLoading(true)
-    window.setTimeout(() => {
-      setLoading(false)
+    const ok = await requestCode()
+    setLoading(false)
+    if (ok) {
       setPhoneStep('otp')
-    }, 700)
+      setResendIn(RESEND_SECONDS)
+    }
   }
 
-  function handleOtpSubmit(e: React.FormEvent) {
+  async function handleResend() {
+    if (resendIn > 0 || loading) return
+    setLoading(true)
+    setOtp('')
+    const ok = await requestCode()
+    setLoading(false)
+    if (ok) setResendIn(RESEND_SECONDS)
+  }
+
+  async function handleOtpSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (otp.length < 6) {
       setError('اكتب رمز التحقق كامل')
       return
     }
     resetErrors()
-    completeAuth()
+    setLoading(true)
+
+    if (!configured) {
+      window.setTimeout(() => {
+        setLoading(false)
+        completeAuth()
+      }, 700)
+      return
+    }
+
+    try {
+      if (!confirmationRef.current) {
+        setError('انتهت الجلسة، اطلب رمز جديد')
+        setLoading(false)
+        return
+      }
+      await confirmationRef.current.confirm(otp)
+      completeAuth()
+    } catch (err) {
+      setError(authErrorMessage(err))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const isSignup = mode === 'signup'
@@ -114,12 +246,17 @@ export function AuthScreen() {
         aria-hidden
       />
 
+      {/* Invisible reCAPTCHA mount point (required by Firebase phone auth) */}
+      <div id={RECAPTCHA_ID} />
+
       <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card shadow-2xl shadow-black/30 font-arabic">
-        {/* ---------- Welcome hero (moved to top) ---------- */}
+        {/* ---------- Welcome hero (top) ---------- */}
         <div className="auth-hero rakoba-pattern relative flex flex-col items-center gap-2 px-6 pb-6 pt-7 text-center">
-          <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm">
-            <RakobaLogo size="sm" />
-            <span className="auth-neon text-sm font-extrabold tracking-wide text-white">راكوبتنا</span>
+          <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 shadow-sm">
+            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-white">
+              <RakobaLogo size="sm" />
+            </span>
+            <span className="text-sm font-extrabold tracking-wide text-primary">راكوبتنا</span>
           </div>
           <h1 className="text-balance text-xl font-extrabold text-white">أهلاً بيك في راكوبتنا</h1>
           <p className="max-w-[18rem] text-pretty text-[13px] leading-relaxed text-white/85">
@@ -277,11 +414,27 @@ export function AuthScreen() {
 
               <SubmitButton loading={loading}>تأكيد الرمز</SubmitButton>
 
+              {/* Resend code */}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendIn > 0 || loading}
+                className={cn(
+                  'text-xs font-semibold transition-colors',
+                  resendIn > 0 || loading
+                    ? 'cursor-not-allowed text-muted-foreground'
+                    : 'text-primary hover:underline',
+                )}
+              >
+                {resendIn > 0 ? `إعادة إرسال الرمز بعد ${resendIn} ثانية` : 'لم يصلك الرمز؟ إعادة الإرسال'}
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
                   setPhoneStep('enter')
                   setOtp('')
+                  setResendIn(0)
                   resetErrors()
                 }}
                 className="text-xs text-muted-foreground transition-colors hover:text-primary"
@@ -295,8 +448,14 @@ export function AuthScreen() {
           {!(method === 'phone' && phoneStep === 'otp') && (
             <>
               <Divider>أو تابع عبر</Divider>
-              <SocialRow />
+              <SocialRow onSelect={handleSocial} loading={socialLoading} />
             </>
+          )}
+
+          {!configured && (
+            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+              وضع تجريبي: لتفعيل الدخول الحقيقي أضف مفاتيح Firebase في إعدادات المشروع.
+            </p>
           )}
         </div>
       </div>
@@ -365,25 +524,38 @@ function ErrorText({ children }: { children: React.ReactNode }) {
   return <p className="text-center text-xs font-medium text-destructive">{children}</p>
 }
 
-const SOCIALS = [
-  { src: '/brand/google.svg', label: 'Google' },
-  { src: '/brand/facebook.svg', label: 'Facebook' },
-  { src: '/brand/github.svg', label: 'GitHub' },
-  { src: '/brand/linkedin.svg', label: 'LinkedIn' },
+const SOCIALS: { id: 'google' | 'facebook'; src: string; label: string }[] = [
+  { id: 'google', src: '/brand/google.svg', label: 'Google' },
+  { id: 'facebook', src: '/brand/facebook.svg', label: 'Facebook' },
 ]
 
-function SocialRow() {
+function SocialRow({
+  onSelect,
+  loading,
+}: {
+  onSelect: (provider: 'google' | 'facebook') => void
+  loading: 'google' | 'facebook' | null
+}) {
   return (
     <div className="flex items-center justify-center gap-3">
       {SOCIALS.map((s) => (
         <button
-          key={s.label}
+          key={s.id}
           type="button"
+          onClick={() => onSelect(s.id)}
+          disabled={loading !== null}
           aria-label={`المتابعة عبر ${s.label}`}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-input bg-muted/40 transition-all hover:border-primary hover:bg-muted active:scale-95"
+          className="flex h-11 min-w-24 items-center justify-center gap-2 rounded-xl border border-input bg-muted/40 px-4 text-sm font-semibold text-foreground transition-all hover:border-primary hover:bg-muted active:scale-95 disabled:opacity-60"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={s.src || '/placeholder.svg'} alt="" className="h-5 w-5" />
+          {loading === s.id ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          ) : (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.src || '/placeholder.svg'} alt="" className="h-5 w-5" />
+              {s.label}
+            </>
+          )}
         </button>
       ))}
     </div>
