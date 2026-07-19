@@ -51,10 +51,16 @@ export default function SouqAlJumaa() {
     setShowBarterOnly,
     showAuctionsOnly,
     setShowAuctionsOnly,
+    subscribeToFirestoreListings,
   } = useSouqStore()
   const { t, language, isRTL } = useLanguage()
   const [selectedListingId, setSelectedListingId] = React.useState<string | null>(null)
   const [showCreateListing, setShowCreateListing] = React.useState(false)
+
+  React.useEffect(() => {
+    const unsubscribe = subscribeToFirestoreListings()
+    return () => unsubscribe()
+  }, [subscribeToFirestoreListings])
 
   // Filter listings
   const filteredListings = React.useMemo(() => {

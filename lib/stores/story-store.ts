@@ -100,79 +100,11 @@ const emptyReactions = (): Record<StoryReaction, number> => ({
   zool: 0,
 })
 
-// ----- Demo data -----
+// ----- Initial data (empty; real stories are user-created) -----
 
-const now = Date.now()
+const demoStories: Story[] = []
 
-const demoStories: Story[] = [
-  {
-    id: 'story-demo-1',
-    ownerId: 'user-2',
-    ownerName: 'Fatima Ali',
-    ownerNameAr: 'فاطمة علي',
-    ownerAvatar: '/avatars/fatima.jpg',
-    mediaUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900',
-    mediaType: 'image',
-    filter: 'warm',
-    texts: [{ id: 't1', text: 'غروب على النيل', xPct: 50, yPct: 22, color: '#FFFFFF', bold: true, italic: false, size: 30 }],
-    stickers: [],
-    createdAt: now - 1000 * 60 * 60 * 2,
-    expiresAt: now - 1000 * 60 * 60 * 2 + DAY_MS,
-    reactions: { heart: 12, celebrate: 3, haha: 0, fire: 5, clap: 2, zool: 4 },
-    viewed: false,
-  },
-  {
-    id: 'story-demo-2',
-    ownerId: 'user-3',
-    ownerName: 'Omar Hassan',
-    ownerNameAr: 'عمر حسن',
-    ownerAvatar: '/avatars/omar.jpg',
-    mediaUrl: 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=900',
-    mediaType: 'image',
-    filter: 'vivid',
-    texts: [{ id: 't1', text: 'الهلال كسب! 🦁', xPct: 50, yPct: 80, color: '#C9A227', bold: true, italic: false, size: 28 }],
-    stickers: [{ id: 's1', type: 'emoji', xPct: 30, yPct: 40, emoji: '🔥' }],
-    createdAt: now - 1000 * 60 * 60 * 5,
-    expiresAt: now - 1000 * 60 * 60 * 5 + DAY_MS,
-    reactions: { heart: 30, celebrate: 14, haha: 2, fire: 22, clap: 9, zool: 6 },
-    viewed: false,
-  },
-]
-
-const demoArchived: Story[] = [
-  {
-    id: 'story-arch-1',
-    ownerId: 'user-1',
-    ownerName: 'Hindawi',
-    ownerNameAr: 'هنداوي',
-    ownerAvatar: '/avatars/default.jpg',
-    mediaUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=900',
-    mediaType: 'image',
-    filter: 'cool',
-    texts: [{ id: 't1', text: 'ذكريات', xPct: 50, yPct: 50, color: '#FFFFFF', bold: true, italic: true, size: 34 }],
-    stickers: [],
-    createdAt: now - DAY_MS * 5,
-    expiresAt: now - DAY_MS * 4,
-    reactions: { heart: 18, celebrate: 4, haha: 1, fire: 7, clap: 3, zool: 9 },
-    viewed: true,
-  },
-  {
-    id: 'story-arch-2',
-    ownerId: 'user-1',
-    ownerName: 'Hindawi',
-    ownerNameAr: 'هنداوي',
-    ownerAvatar: '/avatars/default.jpg',
-    mediaUrl: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=900',
-    mediaType: 'image',
-    filter: 'original',
-    texts: [],
-    stickers: [],
-    createdAt: now - DAY_MS * 9,
-    expiresAt: now - DAY_MS * 8,
-    reactions: { heart: 41, celebrate: 12, haha: 5, fire: 19, clap: 8, zool: 14 },
-    viewed: true,
-  },
-]
+const demoArchived: Story[] = []
 
 // ----- Store -----
 
