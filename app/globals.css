@@ -473,6 +473,194 @@
     animation: gift-explode 0.6s ease-out;
   }
   
+  /* ============================================
+     Auth Double-Slider (Sudanese themed)
+     Mobile-first: vertical slide. Desktop: horizontal.
+     ============================================ */
+  .auth-card {
+    /* The slider math relies on physical left/width offsets, so pin the card
+       to LTR. Centered Arabic content still renders right-to-left correctly. */
+    direction: ltr;
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    height: 600px;
+    max-height: calc(100dvh - 2rem);
+    background: var(--card);
+    border-radius: 1.75rem;
+    border: 1px solid var(--border);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+  }
+
+  /* Form panels (mobile: stacked, occupy top half) */
+  .auth-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: var(--card);
+    transition: transform 0.6s ease-in-out, opacity 0.4s ease-in-out;
+  }
+  .auth-panel--signin {
+    z-index: 2;
+  }
+  .auth-panel--signup {
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .auth-card.is-signup .auth-panel--signin {
+    pointer-events: none;
+  }
+  .auth-card.is-signup .auth-panel--signup {
+    pointer-events: auto;
+  }
+
+  /* Overlay (colored welcome side) - mobile: bottom half */
+  .auth-overlay-container {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    overflow: hidden;
+    z-index: 100;
+    transition: transform 0.6s ease-in-out;
+  }
+  .auth-overlay {
+    position: relative;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    transform: translateY(0);
+    transition: transform 0.6s ease-in-out;
+    color: #ffffff;
+    background: linear-gradient(150deg, #0a9c0a 0%, #008000 45%, #006400 80%, #5c3512 150%);
+  }
+  .auth-overlay-panel {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .auth-overlay-panel--back {
+    top: 0;
+    transform: translateY(-20%);
+  }
+  .auth-overlay-panel--join {
+    bottom: 0;
+    transform: translateY(0);
+  }
+
+  /* Active = sign-up mode */
+  .auth-card.is-signup .auth-panel--signin {
+    transform: translateY(100%);
+  }
+  .auth-card.is-signup .auth-panel--signup {
+    transform: translateY(100%);
+    opacity: 1;
+    z-index: 5;
+  }
+  .auth-card.is-signup .auth-overlay-container {
+    transform: translateY(-100%);
+  }
+  .auth-card.is-signup .auth-overlay {
+    transform: translateY(50%);
+  }
+  .auth-card.is-signup .auth-overlay-panel--back {
+    transform: translateY(0);
+  }
+  .auth-card.is-signup .auth-overlay-panel--join {
+    transform: translateY(20%);
+  }
+
+  /* Desktop: horizontal slider */
+  @media (min-width: 768px) {
+    .auth-card {
+      max-width: 840px;
+      height: 540px;
+    }
+    .auth-panel {
+      top: 0;
+      width: 50%;
+      height: 100%;
+    }
+    .auth-overlay-container {
+      top: 0;
+      left: 50%;
+      width: 50%;
+      height: 100%;
+    }
+    .auth-overlay {
+      top: 0;
+      left: -100%;
+      width: 200%;
+      height: 100%;
+      transform: translateX(0);
+    }
+    .auth-overlay-panel {
+      top: 0;
+      width: 50%;
+      height: 100%;
+    }
+    .auth-overlay-panel--back {
+      left: 0;
+      transform: translateX(-20%);
+    }
+    .auth-overlay-panel--join {
+      right: 0;
+      left: auto;
+      transform: translateX(0);
+    }
+    .auth-card.is-signup .auth-panel--signin {
+      transform: translateX(100%);
+    }
+    .auth-card.is-signup .auth-panel--signup {
+      transform: translateX(100%);
+    }
+    .auth-card.is-signup .auth-overlay-container {
+      transform: translateX(-100%);
+    }
+    .auth-card.is-signup .auth-overlay {
+      transform: translateX(50%);
+    }
+    .auth-card.is-signup .auth-overlay-panel--back {
+      transform: translateX(0);
+    }
+    .auth-card.is-signup .auth-overlay-panel--join {
+      transform: translateX(20%);
+    }
+  }
+
+  /* Neon glow pulse for the brand title (from reference video) */
+  @keyframes auth-neon {
+    0%, 100% {
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.6), 0 0 14px rgba(10, 156, 10, 0.5),
+        0 0 26px rgba(0, 128, 0, 0.4);
+    }
+    50% {
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 0 0 22px rgba(10, 156, 10, 0.8),
+        0 0 40px rgba(0, 128, 0, 0.7);
+    }
+  }
+  .auth-neon {
+    animation: auth-neon 2.4s ease-in-out infinite;
+  }
+
   /* Crown overlay effect */
   .crown-overlay {
     position: relative;
