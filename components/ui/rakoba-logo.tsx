@@ -6,6 +6,11 @@ import { cn } from '@/lib/utils'
 interface RakobaLogoProps {
   className?: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  /**
+   * Wraps the mark in a themed rounded frame so the bright emerald logo
+   * blends with the darker forest-green app chrome instead of clashing.
+   */
+  framed?: boolean
 }
 
 const SIZE_PX: Record<NonNullable<RakobaLogoProps['size']>, number> = {
@@ -15,10 +20,17 @@ const SIZE_PX: Record<NonNullable<RakobaLogoProps['size']>, number> = {
   xl: 120,
 }
 
-export function RakobaLogo({ className, size = 'md' }: RakobaLogoProps) {
+const FRAME_PAD: Record<NonNullable<RakobaLogoProps['size']>, string> = {
+  sm: 'p-[3px] rounded-xl',
+  md: 'p-1 rounded-xl',
+  lg: 'p-1.5 rounded-2xl',
+  xl: 'p-2 rounded-3xl',
+}
+
+export function RakobaLogo({ className, size = 'md', framed = false }: RakobaLogoProps) {
   const px = SIZE_PX[size]
 
-  return (
+  const img = (
     <Image
       src="/brand/rakobatna-mark.png"
       alt="راكوبتنا"
@@ -28,10 +40,25 @@ export function RakobaLogo({ className, size = 'md' }: RakobaLogoProps) {
       quality={90}
       sizes={`${px}px`}
       className={cn(
-        'select-none object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]',
-        className,
+        'select-none object-contain',
+        framed ? 'rounded-lg' : 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.25)]',
+        !framed && className,
       )}
       style={{ width: px, height: px }}
     />
+  )
+
+  if (!framed) return img
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center justify-center bg-primary/10 ring-1 ring-primary/30 shadow-sm',
+        FRAME_PAD[size],
+        className,
+      )}
+    >
+      {img}
+    </span>
   )
 }

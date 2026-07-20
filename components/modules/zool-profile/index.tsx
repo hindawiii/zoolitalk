@@ -31,6 +31,8 @@ import {
   ArrowLeft,
   ArrowRight,
   User as UserIcon,
+  UserPlus,
+  UserCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -53,6 +55,7 @@ import {
 import { useUserStore, type SocialStatus, type ProfessionalStatus, type ReceivedGift, type UserRank, type Gender, type User } from '@/lib/stores/user-store'
 import { useAppStore } from '@/lib/stores/app-store'
 import { useChatStore } from '@/lib/stores/chat-store'
+import { createOrGetPrivateChat, privateChatId } from '@/lib/firebase/chat'
 import { useFeedStore } from '@/lib/stores/feed-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { useGender } from '@/hooks/use-gender'
@@ -247,9 +250,10 @@ function FeaturedPostCard({
 
 export default function ZoolProfile() {
   const { isRTL, t } = useLanguage()
-  const { currentUser, followingIds, updateProfile, viewedUser, setViewedUser, loadUserProfile } = useUserStore()
+  const { currentUser, followingIds, updateProfile, viewedUser, setViewedUser, loadUserProfile, toggleFollow } = useUserStore()
   const { setSettingsOpen, triggerGift, viewingUserId, setViewingUserId, setActiveTab: setAppActiveTab } = useAppStore()
-  const { chats, setActiveChatId } = useChatStore()
+  const { chats, setActiveChatId, addChat } = useChatStore()
+  const [followLoading, setFollowLoading] = React.useState(false)
   const posts = useFeedStore((s) => s.posts)
   const { socialStatus, professionalStatus, rank } = useGender()
   const [activeTab, setActiveTab] = React.useState('posts')
@@ -280,23 +284,86 @@ export default function ZoolProfile() {
     }
   }, [isViewingOtherUser, setViewedUser, setViewingUserId])
   
-  // Start chat with viewed user
-  const handleStartChat = () => {
-    if (viewingUserId) {
-      // Find existing chat or create new one
-      const existingChat = chats.find(c => 
-        c.type === 'private' && c.participants?.some(p => p.id === viewingUserId)
-      )
-      if (existingChat) {
-        setActiveChatId(existingChat.id)
-      } else {
-        setActiveChatId(`chat-${viewingUserId}`)
-      }
-      setAppActiveTab('wansa')
-      setViewingUserId(null)
+  // Start (or open) a real 1:1 chat with the viewed user, persisted to Firestore
+  const handleStartChat = async () => {
+    if (!viewingUserId || !currentUser || !displayUser) return
+
+    // Reuse an existing private chat if we already have one locally.
+    const existingChat = chats.find(
+      (c) => c.type === 'private' && c.participants?.some((p) => p.id === viewingUserId),
+    )
+
+    const me = {
+      id: currentUser.id,
+      name: currentUser.name,
+      nameAr: currentUser.nameAr,
+      avatar: currentUser.avatar,
+      isOnline: true,
+      lastSeen: null,
     }
+    const other = {
+      id: viewingUserId,
+      name: displayUser.name,
+      nameAr: displayUser.nameAr,
+      avatar: displayUser.avatar,
+      isOnline: displayUser.isOnline,
+      lastSeen: displayUser.lastSeen,
+    }
+
+    // Deterministic id keeps both participants on the same conversation doc.
+    let chatId = existingChat?.id || privateChatId(currentUser.id, viewingUserId)
+    try {
+      chatId = await createOrGetPrivateChat(me, other)
+    } catch (err) {
+      console.error('[v0] createOrGetPrivateChat failed:', err)
+    }
+
+    // Ensure a local chat object exists so messages can be sent immediately,
+    // even before the Firestore subscription echoes the new chat back.
+    addChat({
+      id: chatId,
+      type: 'private',
+      name: displayUser.name,
+      nameAr: displayUser.nameAr,
+      avatar: displayUser.avatar,
+      lastMessage: '',
+      lastMessageTime: new Date(),
+      unreadCount: 0,
+      isOnline: displayUser.isOnline,
+      participants: [
+        { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar, role: 'member', isOnline: true },
+        { id: viewingUserId, name: displayUser.name, avatar: displayUser.avatar, role: 'member', isOnline: displayUser.isOnline },
+      ],
+    })
+
+    setActiveChatId(chatId)
+    setAppActiveTab('wansa')
+    setViewingUserId(null)
   }
   
+  // Whether the current user already follows the viewed user
+  const isFollowingUser = Boolean(viewingUserId && followingIds.includes(viewingUserId))
+
+  // Follow / unfollow the viewed user (persists to Firestore + updates counts)
+  const handleToggleFollow = async () => {
+    if (!viewingUserId || followLoading) return
+    setFollowLoading(true)
+    try {
+      await toggleFollow(viewingUserId)
+      // Reflect the follower delta on the profile we are viewing right away.
+      setViewedUser(
+        viewedUser
+          ? {
+              ...viewedUser,
+              followers: Math.max(0, viewedUser.followers + (isFollowingUser ? -1 : 1)),
+            }
+          : viewedUser,
+      )
+    } finally {
+      setFollowLoading(false)
+    }
+  }
+
   // Go back to previous view
   const handleGoBack = () => {
     setViewedUser(null)
@@ -456,7 +523,7 @@ export default function ZoolProfile() {
           {/* Profile Header */}
           <div className="relative px-2 sm:px-4 pb-4 w-full">
             {/* Animated Avatar with Rank Frame */}
-            <div className="relative -mt-16 sm:-mt-20 mb-3 sm:mb-4 flex justify-center w-full">
+            <div className="-mt-16 sm:-mt-20 mb-3 sm:mb-4 flex flex-col items-center w-full">
               <div className="relative">
                 <AnimatedAvatarFrame rank={userRank}>
                   <button
@@ -508,15 +575,15 @@ export default function ZoolProfile() {
                   </DropdownMenu>
                 )}
               </div>
-              
-              {/* Rank Badge */}
+
+              {/* Rank Badge - centered below the avatar */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className={cn(
-                      'absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold text-white bg-gradient-to-r',
+                      'mt-2 inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold text-white bg-gradient-to-r shadow-sm',
                       rankInfo.gradient
                     )}
                   >
@@ -699,6 +766,24 @@ export default function ZoolProfile() {
                 </>
               ) : (
                 <>
+                  <Button
+                    className={cn(
+                      'flex-1 gap-1 sm:gap-2 text-[10px] sm:text-sm h-8 sm:h-10 px-2 sm:px-4 min-w-0',
+                      !isFollowingUser && 'bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white',
+                    )}
+                    variant={isFollowingUser ? 'outline' : 'default'}
+                    onClick={handleToggleFollow}
+                    disabled={followLoading}
+                  >
+                    {isFollowingUser ? (
+                      <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                    ) : (
+                      <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                    )}
+                    <span className="font-arabic truncate">
+                      {isFollowingUser ? (isRTL ? 'متابَع' : 'Following') : (isRTL ? 'متابعة' : 'Follow')}
+                    </span>
+                  </Button>
                   <Button 
                     className="flex-1 gap-1 sm:gap-2 text-[10px] sm:text-sm h-8 sm:h-10 px-2 sm:px-4 min-w-0" 
                     variant="outline"
@@ -708,11 +793,11 @@ export default function ZoolProfile() {
                     <span className="font-arabic truncate">{isRTL ? 'مراسلة' : 'Message'}</span>
                   </Button>
                   <Button 
-                    className="flex-1 gap-1 sm:gap-2 bg-[#2D5A27] hover:bg-[#2D5A27]/90 text-white text-[10px] sm:text-sm h-8 sm:h-10 px-2 sm:px-4 min-w-0"
+                    className="gap-1 sm:gap-2 bg-[#C9A227] hover:bg-[#C9A227]/90 text-white h-8 w-8 sm:h-10 sm:w-10 shrink-0 p-0"
                     onClick={() => triggerGift('jabana', displayUser?.name || 'User')}
+                    aria-label={isRTL ? 'إرسال هدية' : 'Send a gift'}
                   >
                     <Gift className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                    <span className="font-arabic truncate">{isRTL ? 'هدية' : 'Gift'}</span>
                   </Button>
                 </>
               )}
