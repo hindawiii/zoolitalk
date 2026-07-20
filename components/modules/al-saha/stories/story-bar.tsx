@@ -30,83 +30,111 @@ export function StoryBar() {
     [stories, currentUser?.id],
   )
 
-  const ownHasStory = groups.some((g) => g.ownerId === currentUser?.id)
+  const ownGroup = groups.find((g) => g.ownerId === currentUser?.id)
+  const ownHasStory = Boolean(ownGroup)
   const otherGroups = groups.filter((g) => g.ownerId !== currentUser?.id)
+
+  // Latest image frame for the current user's own story card (skip videos).
+  const ownLatest = ownGroup?.stories?.[ownGroup.stories.length - 1]
+  const ownPreview = ownLatest?.mediaType === 'image' ? ownLatest.mediaUrl : undefined
 
   return (
     <div dir="rtl" className="py-3 border-b border-[#2D5A27]/15 bg-white dark:bg-card w-full">
-      <div className="flex gap-3 px-3 overflow-x-auto scrollbar-hide w-full">
-        {/* Add Story / Own story */}
-        <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-          <button
-            onClick={() => {
-              if (ownHasStory) {
-                const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
-                setViewerIndex(idx)
-              } else {
-                setComposerOpen(true)
-              }
-            }}
-            className="relative"
-            aria-label={ownHasStory ? 'عرض قصتك' : 'إضافة قصة'}
-          >
-            <div
-              className={cn(
-                'relative p-0.5 rounded-full',
-                ownHasStory
-                  ? 'bg-gradient-to-tr from-[#C9A227] to-[#2D5A27]'
-                  : 'border-2 border-dashed border-[#C9A227]',
-              )}
-            >
-              <Avatar className="h-16 w-16 border-2 border-white dark:border-card">
-                <AvatarImage src={currentUser?.avatar || '/placeholder.svg'} />
-                <AvatarFallback className="bg-[#2D5A27]/10 text-[#2D5A27]">
-                  {currentUser?.nameAr?.[0] || 'ز'}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            {/* + badge */}
+      <div className="flex gap-2.5 px-3 overflow-x-auto scrollbar-hide w-full">
+        {/* Add Story / Own story — Facebook-style rectangular card */}
+        <button
+          onClick={() => {
+            if (ownHasStory) {
+              const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
+              setViewerIndex(idx)
+            } else {
+              setComposerOpen(true)
+            }
+          }}
+          aria-label={ownHasStory ? 'عرض قصتك' : 'إضافة قصة'}
+          className="relative flex-shrink-0 h-40 w-24 overflow-hidden rounded-xl border border-[#2D5A27]/15 bg-[#2D5A27]/5 shadow-sm"
+        >
+          {/* Top image / avatar area */}
+          <div className="relative h-[68%] w-full overflow-hidden bg-[#2D5A27]/10">
+            {ownHasStory && ownPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={ownPreview || '/placeholder.svg'} alt="" className="h-full w-full object-cover" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={currentUser?.avatar || '/placeholder.svg'}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            )}
+          </div>
+
+          {/* Bottom label area */}
+          <div className="relative flex h-[32%] w-full flex-col items-center justify-end bg-white dark:bg-card pb-1.5">
+            <span className="text-[10px] font-arabic font-semibold text-[#2D5A27] max-w-[88px] truncate">
+              {ownHasStory ? 'قصتك' : 'إضافة قصة'}
+            </span>
+          </div>
+
+          {/* + badge (centered on the divider) */}
+          {!ownHasStory && (
             <span
               onClick={(e) => {
                 e.stopPropagation()
                 setComposerOpen(true)
               }}
-              className="absolute bottom-0 left-0 h-5 w-5 rounded-full bg-[#2D5A27] border-2 border-white dark:border-card flex items-center justify-center"
+              className="absolute bottom-[26%] left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#2D5A27] border-[3px] border-white dark:border-card"
             >
-              <Plus className="h-3 w-3 text-white" />
+              <Plus className="h-3.5 w-3.5 text-white" />
             </span>
-          </button>
-          <span className="text-[10px] font-arabic text-[#2D5A27] max-w-[64px] truncate">
-            {ownHasStory ? 'قصتك' : 'إضافة'}
-          </span>
-        </div>
+          )}
+        </button>
 
-        {/* Other users' stories */}
+        {/* Other users' stories — Facebook-style rectangular cards */}
         {otherGroups.map((g) => {
           const idx = groups.findIndex((x) => x.ownerId === g.ownerId)
+          const latest = g.stories?.[g.stories.length - 1]
+          const preview = latest?.mediaType === 'image' ? latest.mediaUrl : undefined
           return (
-            <div key={g.ownerId} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-              <button onClick={() => setViewerIndex(idx)} aria-label={`قصة ${g.ownerNameAr}`}>
-                <div
-                  className={cn(
-                    'p-0.5 rounded-full',
-                    g.allViewed
-                      ? 'bg-[#2D5A27]/20'
-                      : 'bg-gradient-to-tr from-[#C9A227] to-[#2D5A27]',
-                  )}
-                >
-                  <Avatar className="h-16 w-16 border-2 border-white dark:border-card">
-                    <AvatarImage src={g.ownerAvatar || '/placeholder.svg'} />
-                    <AvatarFallback className="bg-[#2D5A27]/10 text-[#2D5A27]">
-                      {g.ownerNameAr?.[0] || 'ز'}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              </button>
-              <span className="text-[10px] font-arabic text-foreground/80 max-w-[64px] truncate">
+            <button
+              key={g.ownerId}
+              onClick={() => setViewerIndex(idx)}
+              aria-label={`قصة ${g.ownerNameAr}`}
+              className="relative flex-shrink-0 h-40 w-24 overflow-hidden rounded-xl border border-[#2D5A27]/15 shadow-sm"
+            >
+              {/* Full-bleed story preview */}
+              {preview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={preview || '/placeholder.svg'} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-b from-[#2D5A27]/40 to-[#2D5A27]/80" />
+              )}
+
+              {/* Dark gradient for legibility */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+              {/* Author avatar ring (top) */}
+              <span
+                className={cn(
+                  'absolute top-2 right-2 rounded-full p-0.5',
+                  g.allViewed
+                    ? 'bg-white/60 dark:bg-white/40'
+                    : 'bg-gradient-to-tr from-[#C9A227] to-[#2D5A27]',
+                )}
+              >
+                <Avatar className="h-8 w-8 border-2 border-white">
+                  <AvatarImage src={g.ownerAvatar || '/placeholder.svg'} />
+                  <AvatarFallback className="bg-[#2D5A27]/10 text-[#2D5A27] text-xs">
+                    {g.ownerNameAr?.[0] || 'ز'}
+                  </AvatarFallback>
+                </Avatar>
+              </span>
+
+              {/* Name (bottom) */}
+              <span className="absolute bottom-1.5 right-0 left-0 px-1.5 text-center text-[10px] font-arabic font-semibold text-white drop-shadow max-w-full truncate">
                 {g.ownerNameAr}
               </span>
-            </div>
+            </button>
           )
         })}
       </div>
