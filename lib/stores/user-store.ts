@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { db, isFirestoreAvailable } from '@/lib/firebase/config'
 import type { FirebaseUser } from '@/lib/firebase/auth'
+import * as social from '@/lib/firebase/social'
 
 export type Gender = 'male' | 'female'
 export type SocialStatus = 'single' | 'taken' | 'engaged' | 'married' | 'complicated' | 'gave_up'
@@ -105,6 +106,9 @@ interface UserState {
   // Following
   followUser: (userId: string) => void
   unfollowUser: (userId: string) => void
+  toggleFollow: (userId: string) => Promise<void>
+  isFollowing: (userId: string) => boolean
+  hydrateFollowing: () => Promise<void>
   followingIds: string[]
 }
 
@@ -283,6 +287,7 @@ export const useUserStore = create<UserState>()(
               lastSeen: data.lastSeen?.toDate?.() ?? null,
             } as User
             set({ currentUser: merged, isAuthenticated: true, authLoading: false })
+            void get().hydrateFollowing()
           } else {
             // First sign-in: create the profile document in Firestore.
             await setDoc(userRef, {
@@ -322,9 +327,14 @@ export const useUserStore = create<UserState>()(
         })),
       
       followingIds: [],
+      isFollowing: (userId) => get().followingIds.includes(userId),
+
+      // Optimistic local follow (used by toggleFollow after Firestore write).
       followUser: (userId) =>
         set((state) => ({
-          followingIds: [...state.followingIds, userId],
+          followingIds: state.followingIds.includes(userId)
+            ? state.followingIds
+            : [...state.followingIds, userId],
           currentUser: state.currentUser
             ? { ...state.currentUser, following: state.currentUser.following + 1 }
             : null
@@ -333,9 +343,39 @@ export const useUserStore = create<UserState>()(
         set((state) => ({
           followingIds: state.followingIds.filter(id => id !== userId),
           currentUser: state.currentUser
-            ? { ...state.currentUser, following: state.currentUser.following - 1 }
+            ? { ...state.currentUser, following: Math.max(0, state.currentUser.following - 1) }
             : null
         })),
+
+      // Toggle follow with optimistic UI + Firestore persistence (updates both
+      // users' aggregate counts). Rolls back the local state if the write fails.
+      toggleFollow: async (userId) => {
+        const { currentUser, followingIds, followUser, unfollowUser } = get()
+        if (!currentUser || currentUser.id === userId) return
+        const wasFollowing = followingIds.includes(userId)
+
+        // Optimistic update
+        if (wasFollowing) unfollowUser(userId)
+        else followUser(userId)
+
+        try {
+          if (wasFollowing) await social.unfollowUser(currentUser.id, userId)
+          else await social.followUser(currentUser.id, userId)
+        } catch (err) {
+          console.error('[v0] toggleFollow failed, rolling back:', err)
+          // Roll back on failure
+          if (wasFollowing) followUser(userId)
+          else unfollowUser(userId)
+        }
+      },
+
+      // Load the real following list from Firestore after sign-in.
+      hydrateFollowing: async () => {
+        const { currentUser } = get()
+        if (!currentUser) return
+        const ids = await social.fetchFollowingIds(currentUser.id)
+        set({ followingIds: ids })
+      },
     }),
     {
       name: 'rakobatna-user-storage',

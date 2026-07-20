@@ -89,9 +89,9 @@ export function AppShell() {
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 bg-card/80 backdrop-blur-md border-b w-full max-w-full">
         <div className="flex items-center gap-2">
-          <RakobaLogo size="sm" />
+          <RakobaLogo size="sm" framed />
           <h1 className={cn(
-            'text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent',
+            'text-xl font-bold text-primary',
             isRTL && 'font-arabic'
           )}>
             {t('app.name')}
