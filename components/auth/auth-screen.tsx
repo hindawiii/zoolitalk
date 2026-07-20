@@ -30,6 +30,7 @@ const RECAPTCHA_ID = 'rakoba-recaptcha'
 
 export function AuthScreen() {
   const setAuthenticated = useUserStore((s) => s.setAuthenticated)
+  const hydrateDemoUser = useUserStore((s) => s.hydrateDemoUser)
 
   const [mode, setMode] = React.useState<Mode>('signin')
   const [method, setMethod] = React.useState<Method>('email')
@@ -37,6 +38,11 @@ export function AuthScreen() {
   const [loading, setLoading] = React.useState(false)
   const [socialLoading, setSocialLoading] = React.useState<'google' | 'facebook' | null>(null)
   const [error, setError] = React.useState('')
+
+  // Demo-mode profile step: when Firebase is not configured, social login
+  // asks for a display name instead of silently opening the app.
+  const [demoProvider, setDemoProvider] = React.useState<'google' | 'facebook' | null>(null)
+  const [demoName, setDemoName] = React.useState('')
 
   // Shared fields
   const [name, setName] = React.useState('')
@@ -108,14 +114,16 @@ export function AuthScreen() {
     setOtp('')
   }
 
-  function completeAuth() {
+  function completeAuth(demoInfo?: { name?: string; email?: string; phone?: string }) {
     if (isFirebaseConfigured) {
       // The Firebase auth watcher (in app/page.tsx) will load the real
       // profile and flip isAuthenticated once it's ready. Show the loader
       // meanwhile to avoid a flash back to this screen.
       useUserStore.setState({ authLoading: true })
     } else {
-      // Demo mode only (Firebase keys not set).
+      // Demo mode only (Firebase keys not set): build a real local user so
+      // publishing posts/stories/listings works instead of silently failing.
+      hydrateDemoUser(demoInfo ?? {})
       setAuthenticated(true)
     }
   }
