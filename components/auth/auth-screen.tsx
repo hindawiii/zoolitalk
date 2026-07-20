@@ -4,6 +4,8 @@ import * as React from 'react'
 import { Mail, Lock, User, Eye, EyeOff, Coffee, Phone, ArrowRight } from 'lucide-react'
 import { RakobaLogo } from '@/components/ui/rakoba-logo'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { CountryCodePicker } from '@/components/auth/country-code-picker'
+import { DEFAULT_COUNTRY, findCountryByIso, type Country } from '@/lib/data/countries'
 import { useUserStore } from '@/lib/stores/user-store'
 import { cn } from '@/lib/utils'
 import {
@@ -28,6 +30,7 @@ const RECAPTCHA_ID = 'rakoba-recaptcha'
 
 export function AuthScreen() {
   const setAuthenticated = useUserStore((s) => s.setAuthenticated)
+  const hydrateDemoUser = useUserStore((s) => s.hydrateDemoUser)
 
   const [mode, setMode] = React.useState<Mode>('signin')
   const [method, setMethod] = React.useState<Method>('email')
@@ -36,6 +39,11 @@ export function AuthScreen() {
   const [socialLoading, setSocialLoading] = React.useState<'google' | 'facebook' | null>(null)
   const [error, setError] = React.useState('')
 
+  // Demo-mode profile step: when Firebase is not configured, social login
+  // asks for a display name instead of silently opening the app.
+  const [demoProvider, setDemoProvider] = React.useState<'google' | 'facebook' | null>(null)
+  const [demoName, setDemoName] = React.useState('')
+
   // Shared fields
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
@@ -43,10 +51,41 @@ export function AuthScreen() {
 
   // Phone flow
   const [phone, setPhone] = React.useState('')
+  const [country, setCountry] = React.useState<Country>(DEFAULT_COUNTRY)
+  const [detectingCountry, setDetectingCountry] = React.useState(true)
   const [phoneStep, setPhoneStep] = React.useState<PhoneStep>('enter')
   const [otp, setOtp] = React.useState('')
   const [resendIn, setResendIn] = React.useState(0)
   const confirmationRef = React.useRef<ConfirmationResult | null>(null)
+
+  // Geo-detect the visitor's country once so the picker defaults sensibly.
+  React.useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 4000)
+
+    async function detect() {
+      try {
+        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal })
+        if (!res.ok) throw new Error('geo lookup failed')
+        const data = (await res.json()) as { country_code?: string }
+        const detected = findCountryByIso(data.country_code)
+        if (!cancelled && detected) setCountry(detected)
+      } catch {
+        /* keep the default country (Sudan) on any failure */
+      } finally {
+        window.clearTimeout(timeout)
+        if (!cancelled) setDetectingCountry(false)
+      }
+    }
+
+    detect()
+    return () => {
+      cancelled = true
+      controller.abort()
+      window.clearTimeout(timeout)
+    }
+  }, [])
 
   // Countdown for the resend button
   React.useEffect(() => {
@@ -75,14 +114,16 @@ export function AuthScreen() {
     setOtp('')
   }
 
-  function completeAuth() {
+  function completeAuth(demoInfo?: { name?: string; email?: string; phone?: string }) {
     if (isFirebaseConfigured) {
       // The Firebase auth watcher (in app/page.tsx) will load the real
       // profile and flip isAuthenticated once it's ready. Show the loader
       // meanwhile to avoid a flash back to this screen.
       useUserStore.setState({ authLoading: true })
     } else {
-      // Demo mode only (Firebase keys not set).
+      // Demo mode only (Firebase keys not set): build a real local user so
+      // publishing posts/stories/listings works instead of silently failing.
+      hydrateDemoUser(demoInfo ?? {})
       setAuthenticated(true)
     }
   }
@@ -154,12 +195,12 @@ export function AuthScreen() {
   /* ---------------- Phone ---------------- */
   function toE164(raw: string) {
     const digits = raw.replace(/\D/g, '').replace(/^0+/, '')
-    return `+249${digits}`
+    return `+${country.dial}${digits}`
   }
 
   async function requestCode() {
-    const digits = phone.replace(/\D/g, '')
-    if (digits.length < 9) {
+    const digits = phone.replace(/\D/g, '').replace(/^0+/, '')
+    if (digits.length < 6) {
       setError('اكتب رقم هاتف صحيح')
       return false
     }
@@ -385,8 +426,16 @@ export function AuthScreen() {
                 />
               )}
 
-              <div className="flex w-full items-center gap-2 rounded-xl border border-input bg-muted/60 px-3 py-2.5 transition-colors focus-within:border-primary focus-within:bg-muted">
-                <Phone className="h-4 w-4 text-muted-foreground" />
+              <div className="flex w-full items-center gap-1.5 rounded-xl border border-input bg-muted/60 px-2 py-1.5 transition-colors focus-within:border-primary focus-within:bg-muted">
+                <CountryCodePicker
+                  value={country}
+                  onChange={(c) => {
+                    setCountry(c)
+                    if (error) resetErrors()
+                  }}
+                  detecting={detectingCountry}
+                />
+                <span className="h-6 w-px shrink-0 bg-border" aria-hidden />
                 <input
                   dir="ltr"
                   type="tel"
@@ -398,11 +447,8 @@ export function AuthScreen() {
                     if (error) resetErrors()
                   }}
                   autoComplete="tel"
-                  className="min-w-0 flex-1 bg-transparent text-left text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                  className="min-w-0 flex-1 bg-transparent px-1 text-left text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
-                <span className="shrink-0 rounded-md bg-background px-2 py-0.5 text-xs font-semibold text-muted-foreground">
-                  249+
-                </span>
               </div>
 
               {error && <ErrorText>{error}</ErrorText>}
@@ -421,7 +467,7 @@ export function AuthScreen() {
               <p className="text-center text-xs text-muted-foreground">
                 أرسلنا رمز مكوّن من 6 أرقام إلى
                 <span dir="ltr" className="mx-1 font-semibold text-foreground">
-                  +249 {phone}
+                  +{country.dial} {phone}
                 </span>
               </p>
 

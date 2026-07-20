@@ -55,6 +55,9 @@ export interface LocalService {
   statusUpdates: ServiceStatus[]
   isOpen: boolean
   distance?: string
+  // Real geo-coordinates used to compute live distance from the user.
+  lat?: number
+  lng?: number
 }
 
 export interface ServiceStatus {
@@ -142,6 +145,8 @@ const demoServices: LocalService[] = [
     addressAr: 'سوبا، الخرطوم',
     isOpen: true,
     distance: '2.3 كم',
+    lat: 15.5,
+    lng: 32.55,
     statusUpdates: [
       { id: 'st1', message: 'Emergency open 24/7', messageAr: 'الطوارئ مفتوحة ٢٤ ساعة', timestamp: new Date(), authorName: 'أحمد' },
     ],
@@ -155,6 +160,8 @@ const demoServices: LocalService[] = [
     addressAr: 'بحري، الخرطوم',
     isOpen: true,
     distance: '1.1 كم',
+    lat: 15.64,
+    lng: 32.53,
     statusUpdates: [
       { id: 'st2', message: 'All medicines available', messageAr: 'كل الأدوية متوفرة', timestamp: new Date(), authorName: 'محمد' },
       { id: 'st3', message: 'Crowded now', messageAr: 'الصيدلية مزدحمة حالياً', timestamp: new Date(Date.now() - 1000 * 60 * 30), authorName: 'سارة' },
@@ -169,6 +176,8 @@ const demoServices: LocalService[] = [
     addressAr: 'وسط الخرطوم',
     isOpen: true,
     distance: '3.5 كم',
+    lat: 15.59,
+    lng: 32.533,
     statusUpdates: [
       { id: 'st4', message: 'Bread available now', messageAr: 'خبز متوفر الآن', timestamp: new Date(), authorName: 'خالد' },
       { id: 'st5', message: 'Good prices today', messageAr: 'أسعار ممتازة اليوم', timestamp: new Date(Date.now() - 1000 * 60 * 45), authorName: 'فاطمة' },
@@ -183,6 +192,8 @@ const demoServices: LocalService[] = [
     addressAr: 'الرياض، الخرطوم',
     isOpen: true,
     distance: '4.2 كم',
+    lat: 15.57,
+    lng: 32.57,
     statusUpdates: [],
   },
   {
@@ -194,6 +205,8 @@ const demoServices: LocalService[] = [
     addressAr: 'أم درمان',
     isOpen: false,
     distance: '5.8 كم',
+    lat: 15.645,
+    lng: 32.477,
     statusUpdates: [
       { id: 'st6', message: 'Opens at 8 AM', messageAr: 'تفتح الساعة ٨ صباحاً', timestamp: new Date(), authorName: 'عمر' },
     ],
@@ -207,6 +220,8 @@ const demoServices: LocalService[] = [
     addressAr: 'وسط أم درمان',
     isOpen: true,
     distance: '6.1 كم',
+    lat: 15.65,
+    lng: 32.48,
     statusUpdates: [
       { id: 'st7', message: 'Fresh vegetables arrived', messageAr: 'خضار طازة وصلت', timestamp: new Date(), authorName: 'أمينة' },
     ],

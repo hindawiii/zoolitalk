@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useFeedStore } from '@/lib/stores/feed-store'
+import { useFeedStore, type Post, type TrendingHashtag } from '@/lib/stores/feed-store'
 import { cn } from '@/lib/utils'
 
 const cities = [
@@ -24,9 +24,82 @@ const cities = [
   { id: 'نيالا', label: 'نيالا' },
 ]
 
+const HASHTAG_RE = /#([\p{L}\p{N}_]+)/gu
+const HOT_WINDOW_MS = 6 * 60 * 60 * 1000 // active in the last 6 hours
+
+/**
+ * Build the live "نبض الشارع" trend list from real Firestore posts.
+ * We scan every post's text for hashtags, then aggregate unique authors
+ * (zoolsCount), the most common city, and recent activity (isHot).
+ */
+function computeTrends(posts: Post[]): TrendingHashtag[] {
+  const now = Date.now()
+  const map = new Map<
+    string,
+    { authors: Set<string>; cities: Map<string, number>; lastActive: number }
+  >()
+
+  for (const post of posts) {
+    const text = `${post.contentAr || ''} ${post.content || ''}`
+    const seen = new Set<string>()
+    let match: RegExpExecArray | null
+    HASHTAG_RE.lastIndex = 0
+    while ((match = HASHTAG_RE.exec(text)) !== null) {
+      const tag = match[1]
+      if (!tag || seen.has(tag)) continue
+      seen.add(tag)
+
+      let entry = map.get(tag)
+      if (!entry) {
+        entry = { authors: new Set(), cities: new Map(), lastActive: 0 }
+        map.set(tag, entry)
+      }
+      if (post.authorId) entry.authors.add(post.authorId)
+      const city = post.location
+      if (city) entry.cities.set(city, (entry.cities.get(city) || 0) + 1)
+      const ts = post.timestamp instanceof Date ? post.timestamp.getTime() : now
+      if (ts > entry.lastActive) entry.lastActive = ts
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([tag, entry]) => {
+      // Pick the most-mentioned city for this hashtag (if any).
+      let topCity: string | undefined
+      let topCount = 0
+      for (const [city, count] of entry.cities) {
+        if (count > topCount) {
+          topCount = count
+          topCity = city
+        }
+      }
+      return {
+        id: tag,
+        tag,
+        tagAr: tag,
+        zoolsCount: entry.authors.size,
+        isHot: now - entry.lastActive <= HOT_WINDOW_MS,
+        city: topCity,
+      } satisfies TrendingHashtag
+    })
+    .sort((a, b) => {
+      if (a.isHot !== b.isHot) return a.isHot ? -1 : 1
+      return b.zoolsCount - a.zoolsCount
+    })
+}
+
 export function TrendsTab() {
-  const { trends } = useFeedStore()
+  const posts = useFeedStore((s) => s.posts)
+  const subscribeToFirestorePosts = useFeedStore((s) => s.subscribeToFirestorePosts)
   const [selectedCity, setSelectedCity] = React.useState('all')
+
+  // Ensure posts are streaming even if the user opens this tab first.
+  React.useEffect(() => {
+    const unsubscribe = subscribeToFirestorePosts()
+    return unsubscribe
+  }, [subscribeToFirestorePosts])
+
+  const trends = React.useMemo(() => computeTrends(posts), [posts])
 
   const filteredTrends = React.useMemo(() => {
     if (selectedCity === 'all') return trends

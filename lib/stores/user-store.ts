@@ -91,6 +91,8 @@ interface UserState {
   authLoading: boolean
   // Build/load the real profile from a signed-in Firebase user
   hydrateFromFirebaseUser: (fbUser: FirebaseUser) => Promise<void>
+  // Create a local session when Firebase is not configured (demo mode)
+  hydrateDemoUser: (info: { name?: string; email?: string; phone?: string }) => void
   // Clear session (on sign-out / no user)
   clearAuth: () => void
   
@@ -302,6 +304,42 @@ export const useUserStore = create<UserState>()(
           console.error('[v0] Error hydrating profile from Firestore:', error)
           set({ currentUser: baseProfile, isAuthenticated: true, authLoading: false })
         }
+      },
+
+      // Create a local session when Firebase keys are not configured.
+      // This gives the app a real `currentUser` so publishing posts/stories/
+      // listings works in demo mode instead of silently aborting.
+      hydrateDemoUser: (info) => {
+        const displayName =
+          info.name?.trim() ||
+          info.email?.split('@')[0]?.trim() ||
+          'زول جديد'
+        const id = `demo_${Date.now().toString(36)}`
+        const demoUser: User = {
+          id,
+          username: info.email?.split('@')[0] || id,
+          name: displayName,
+          nameAr: displayName,
+          nickname: displayName,
+          email: info.email || '',
+          phone: info.phone || '',
+          avatar: '/avatars/default.jpg',
+          coverPhoto: '/covers/default.jpg',
+          bio: '',
+          bioAr: '',
+          zoolPoints: 0,
+          followers: 0,
+          following: 0,
+          postsCount: 0,
+          isOnline: true,
+          lastSeen: null,
+          isVerified: false,
+          location: '',
+          gender: undefined,
+          rank: 'newbie',
+          rankTitle: 'زول جديد',
+        }
+        set({ currentUser: demoUser, isAuthenticated: true, authLoading: false })
       },
 
       // Clear the session when Firebase reports no user

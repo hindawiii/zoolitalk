@@ -26,6 +26,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useFeedStore, type LocalService, type ServiceStatus } from '@/lib/stores/feed-store'
+import { useLocationStore, formatDistanceAr } from '@/lib/stores/location-store'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { ar } from 'date-fns/locale'
@@ -67,12 +68,14 @@ const getCategoryColor = (category: LocalService['category']) => {
 
 interface ServiceCardProps {
   service: LocalService
+  liveDistance?: string
   onOpenDetail: (service: LocalService) => void
 }
 
-function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
+function ServiceCard({ service, liveDistance, onOpenDetail }: ServiceCardProps) {
   const Icon = getCategoryIcon(service.category)
   const latestStatus = service.statusUpdates[0]
+  const distanceLabel = liveDistance ?? service.distance
 
   return (
     <motion.div
@@ -118,9 +121,9 @@ function ServiceCard({ service, onOpenDetail }: ServiceCardProps) {
               <span className="flex flex-row-reverse items-center gap-0.5"><XCircle className="h-2.5 w-2.5" /> مغلق</span>
             )}
           </Badge>
-          {service.distance && (
-            <span className="text-[10px] text-muted-foreground font-arabic">
-              {service.distance}
+          {distanceLabel && (
+            <span className="text-[10px] font-medium text-[#2D5A27] dark:text-primary font-arabic">
+              {distanceLabel}
             </span>
           )}
         </div>
@@ -271,19 +274,53 @@ function ServiceDetailSheet({ service, open, onOpenChange }: ServiceDetailSheetP
 
 export function RadarTab() {
   const { services } = useFeedStore()
+  const status = useLocationStore((s) => s.status)
+  const coords = useLocationStore((s) => s.coords)
+  const cityAr = useLocationStore((s) => s.cityAr)
+  const locationError = useLocationStore((s) => s.error)
+  const requestLocation = useLocationStore((s) => s.requestLocation)
+  const distanceKm = useLocationStore((s) => s.distanceKm)
+
   const [selectedCategory, setSelectedCategory] = React.useState<CategoryFilter>('all')
   const [selectedService, setSelectedService] = React.useState<LocalService | null>(null)
   const [showDetail, setShowDetail] = React.useState(false)
 
-  const filteredServices = React.useMemo(() => {
-    if (selectedCategory === 'all') return services
-    return services.filter((service) => service.category === selectedCategory)
-  }, [services, selectedCategory])
+  // Auto-request location once when the radar opens (only if not decided yet).
+  React.useEffect(() => {
+    if (status === 'idle') void requestLocation()
+  }, [status, requestLocation])
+
+  // Compute live distance labels + sort nearest-first when we have a fix.
+  const orderedServices = React.useMemo(() => {
+    const byCategory =
+      selectedCategory === 'all'
+        ? services
+        : services.filter((service) => service.category === selectedCategory)
+
+    const withDistance = byCategory.map((service) => {
+      const km =
+        coords && service.lat != null && service.lng != null
+          ? distanceKm(service.lat, service.lng)
+          : null
+      return { service, km, label: km != null ? formatDistanceAr(km) : undefined }
+    })
+
+    if (coords) {
+      withDistance.sort((a, b) => {
+        if (a.km == null) return 1
+        if (b.km == null) return -1
+        return a.km - b.km
+      })
+    }
+    return withDistance
+  }, [services, selectedCategory, coords, distanceKm])
 
   const handleOpenDetail = (service: LocalService) => {
     setSelectedService(service)
     setShowDetail(true)
   }
+
+  const showLocationBanner = status !== 'granted'
 
   return (
     <div dir="rtl" className="flex flex-col h-full w-full bg-[#F5F5DC] dark:bg-background overflow-hidden">
@@ -313,20 +350,53 @@ export function RadarTab() {
         </div>
       </div>
 
+      {/* Location status bar */}
+      {status === 'granted' ? (
+        <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-[#2D5A27]/10 border-b border-[#2D5A27]/10">
+          <MapPin className="h-3.5 w-3.5 text-[#2D5A27] dark:text-primary" />
+          <span className="text-[11px] font-arabic text-[#2D5A27] dark:text-primary">
+            {cityAr ? `موقعك: ${cityAr} — الأقرب ليك فوق` : 'تم تحديد موقعك — الأقرب ليك فوق'}
+          </span>
+        </div>
+      ) : showLocationBanner ? (
+        <div className="flex-shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-amber-500/10 border-b border-amber-500/20">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <MapPin className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <span className="text-[11px] font-arabic text-amber-700 dark:text-amber-500 truncate">
+              {locationError ?? 'فعّل موقعك عشان نوريك الخدمات الأقرب ليك'}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => void requestLocation()}
+            disabled={status === 'prompting'}
+            className="h-7 gap-1 bg-amber-600 hover:bg-amber-600/90 text-white font-arabic text-[11px] px-2.5 flex-shrink-0"
+          >
+            {status === 'prompting' ? (
+              <span className="h-3 w-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <MapPin className="h-3.5 w-3.5" />
+            )}
+            {status === 'denied' ? 'حاول تاني' : 'فعّل الموقع'}
+          </Button>
+        </div>
+      ) : null}
+
       {/* Services Grid */}
       <ScrollArea className="flex-1">
         <div className="p-3">
           <div className="grid grid-cols-2 gap-2">
-            {filteredServices.map((service) => (
+            {orderedServices.map(({ service, label }) => (
               <ServiceCard 
                 key={service.id} 
                 service={service} 
+                liveDistance={label}
                 onOpenDetail={handleOpenDetail}
               />
             ))}
           </div>
 
-          {filteredServices.length === 0 && (
+          {orderedServices.length === 0 && (
             <div className="text-center py-12">
               <MapPin className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
               <p className="text-sm text-muted-foreground font-arabic">
