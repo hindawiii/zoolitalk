@@ -1,10 +1,30 @@
 'use client'
 
 import * as React from 'react'
-import { Heart, MessageCircle, Share2, Bookmark, Music, Plus, Volume2, VolumeX, Play, X, Link2, Send } from 'lucide-react'
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  Music,
+  Plus,
+  Volume2,
+  VolumeX,
+  Play,
+  X,
+  Link2,
+  Send,
+  Download,
+  ChevronUp,
+  Hash,
+  Youtube,
+  Facebook,
+  Instagram,
+  ExternalLink,
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useReelsStore, type Reel } from '@/lib/stores/reels-store'
+import { useReelsStore, getEmbedUrl, PLATFORM_LABELS, type Reel, type ReelSource } from '@/lib/stores/reels-store'
 import { ReelCommentsSheet } from './reel-comments-sheet'
 import { ReelComposer } from './reel-composer'
 import { cn } from '@/lib/utils'
@@ -13,6 +33,13 @@ function formatCount(n: number) {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`
   return `${n}`
+}
+
+function PlatformIcon({ source, className }: { source?: ReelSource; className?: string }) {
+  if (source === 'youtube') return <Youtube className={className} />
+  if (source === 'facebook') return <Facebook className={className} />
+  if (source === 'instagram') return <Instagram className={className} />
+  return <Link2 className={className} />
 }
 
 interface ReelItemProps {
@@ -32,10 +59,15 @@ function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, onOpenSha
   const videoRef = React.useRef<HTMLVideoElement | null>(null)
   const [paused, setPaused] = React.useState(false)
   const [showHeart, setShowHeart] = React.useState(false)
+  const [expanded, setExpanded] = React.useState(false)
   const lastTap = React.useRef(0)
 
-  // Autoplay only the active reel.
+  const isExternal = reel.source && reel.source !== 'upload'
+  const embedUrl = isExternal ? getEmbedUrl(reel.videoUrl) : null
+
+  // Autoplay only the active uploaded reel.
   React.useEffect(() => {
+    if (isExternal) return
     const v = videoRef.current
     if (!v) return
     if (active) {
@@ -45,17 +77,21 @@ function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, onOpenSha
     } else {
       v.pause()
     }
+  }, [active, isExternal])
+
+  // Collapse the caption whenever this reel scrolls out of view.
+  React.useEffect(() => {
+    if (!active) setExpanded(false)
   }, [active])
 
   const handleTap = () => {
+    if (isExternal) return
     const now = Date.now()
     if (now - lastTap.current < 280) {
-      // double tap -> like
       if (!reel.liked) toggleLike(reel.id)
       setShowHeart(true)
       setTimeout(() => setShowHeart(false), 700)
     } else {
-      // single tap -> play/pause
       const v = videoRef.current
       if (!v) return
       if (v.paused) {
@@ -69,104 +105,200 @@ function ReelItem({ reel, active, muted, onToggleMute, onOpenComments, onOpenSha
     lastTap.current = now
   }
 
+  const handleDownload = () => {
+    // Uploaded videos download directly; external links open at the source.
+    if (isExternal) {
+      window.open(reel.linkUrl || reel.videoUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+    const a = document.createElement('a')
+    a.href = reel.videoUrl
+    a.download = `rakobtana-${reel.id}.mp4`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  const hashtags = reel.hashtags ?? []
+
   return (
-    <div className="relative h-full w-full snap-start snap-always shrink-0 bg-black overflow-hidden">
-      {/* Poster background fallback (shows when the video is buffering or unavailable) */}
-      {reel.posterUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={reel.posterUrl || '/placeholder.svg'}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+    <div className="relative h-full w-full snap-start snap-always shrink-0 overflow-hidden bg-black">
+      {/* ---------- Media layer ---------- */}
+      {isExternal ? (
+        embedUrl && active ? (
+          <iframe
+            src={`${embedUrl}${embedUrl.includes('?') ? '&' : '?'}autoplay=1&mute=${muted ? 1 : 0}`}
+            title={reel.caption || 'فيديو'}
+            className="absolute inset-0 h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          // Non-embeddable (Instagram/TikTok) or inactive: link card
+          <button
+            type="button"
+            onClick={() => window.open(reel.linkUrl || reel.videoUrl, '_blank', 'noopener,noreferrer')}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#1a1a1a] to-black text-white"
+          >
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+              <PlatformIcon source={reel.source} className="h-8 w-8" />
+            </span>
+            <span className="font-arabic text-sm">شاهد على {PLATFORM_LABELS[reel.source ?? 'link']}</span>
+            <span className="flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 font-arabic text-xs">
+              <ExternalLink className="h-3.5 w-3.5" />
+              فتح الرابط
+            </span>
+          </button>
+        )
+      ) : (
+        <>
+          {reel.posterUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={reel.posterUrl || '/placeholder.svg'}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+          <button type="button" onClick={handleTap} className="absolute inset-0 h-full w-full" aria-label="تشغيل/إيقاف">
+            <video
+              ref={videoRef}
+              src={reel.videoUrl}
+              poster={reel.posterUrl || undefined}
+              className="relative h-full w-full object-cover"
+              loop
+              muted={muted}
+              playsInline
+              preload="metadata"
+            />
+          </button>
+
+          {paused && active && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/40">
+                <Play className="h-7 w-7 fill-white text-white" />
+              </div>
+            </div>
+          )}
+
+          {showHeart && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <Heart className="h-20 w-20 animate-ping fill-white text-white" />
+            </div>
+          )}
+        </>
       )}
 
-      {/* Video */}
-      <button type="button" onClick={handleTap} className="absolute inset-0 h-full w-full" aria-label="تشغيل/إيقاف">
-        <video
-          ref={videoRef}
-          src={reel.videoUrl}
-          poster={reel.posterUrl || undefined}
-          className="relative h-full w-full object-cover"
-          loop
-          muted={muted}
-          playsInline
-          preload="metadata"
-        />
-      </button>
-
-      {/* Pause indicator */}
-      {paused && active && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-16 w-16 rounded-full bg-black/40 flex items-center justify-center">
-            <Play className="h-8 w-8 text-white fill-white" />
-          </div>
-        </div>
+      {/* Mute toggle (only for uploaded video / youtube embeds) */}
+      {(!isExternal || embedUrl) && (
+        <button
+          onClick={onToggleMute}
+          aria-label={muted ? 'تشغيل الصوت' : 'كتم الصوت'}
+          className="absolute end-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur"
+        >
+          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </button>
       )}
-
-      {/* Double-tap heart */}
-      {showHeart && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <Heart className="h-24 w-24 text-white fill-white animate-ping" />
-        </div>
-      )}
-
-      {/* Mute toggle */}
-      <button
-        onClick={onToggleMute}
-        aria-label={muted ? 'تشغيل الصوت' : 'كتم الصوت'}
-        className="absolute top-3 end-3 z-20 h-9 w-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white"
-      >
-        {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-      </button>
 
       {/* Gradient for legibility */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 to-transparent" />
 
-      {/* Right interaction rail */}
-      <div className="absolute bottom-24 end-3 z-20 flex flex-col items-center gap-5 text-white">
-        <RailButton
-          onClick={() => toggleLike(reel.id)}
-          label="إعجاب"
-          count={formatCount(reel.likes)}
-        >
-          <Heart className={cn('h-7 w-7', reel.liked && 'fill-red-500 text-red-500')} />
+      {/* ---------- Right interaction rail ---------- */}
+      <div className="absolute bottom-4 end-2 z-20 flex flex-col items-center gap-3.5 text-white">
+        <RailButton onClick={() => toggleLike(reel.id)} label="إعجاب" count={formatCount(reel.likes)}>
+          <Heart className={cn('h-6 w-6', reel.liked && 'fill-red-500 text-red-500')} />
         </RailButton>
         <RailButton onClick={() => onOpenComments(reel.id)} label="تعليق" count={formatCount(commentCount)}>
-          <MessageCircle className="h-7 w-7" />
+          <MessageCircle className="h-6 w-6" />
         </RailButton>
         <RailButton onClick={() => onOpenShare(reel.id)} label="مشاركة" count={formatCount(reel.shares)}>
-          <Share2 className="h-7 w-7" />
+          <Share2 className="h-6 w-6" />
         </RailButton>
         <RailButton onClick={() => toggleSave(reel.id)} label="حفظ">
-          <Bookmark className={cn('h-7 w-7', reel.saved && 'fill-[#C9A227] text-[#C9A227]')} />
+          <Bookmark className={cn('h-6 w-6', reel.saved && 'fill-[#C9A227] text-[#C9A227]')} />
         </RailButton>
-        {reel.track && (
-          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-[#C9A227] to-[#2D5A27] flex items-center justify-center animate-spin-slow">
-            <Music className="h-4 w-4 text-white" />
-          </div>
-        )}
+        <RailButton onClick={handleDownload} label="تحميل">
+          <Download className="h-6 w-6" />
+        </RailButton>
       </div>
 
-      {/* Bottom-left author + caption */}
-      <div className="absolute bottom-20 start-3 end-16 z-20 text-white space-y-2" dir="rtl">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-9 w-9 border-2 border-white">
+      {/* ---------- Bottom-left author + caption + hashtags ---------- */}
+      <div className="absolute inset-x-0 bottom-3 z-20 ps-3 pe-14 text-white" dir="rtl">
+        <div className="mb-1.5 flex items-center gap-2">
+          <Avatar className="h-8 w-8 border-2 border-white">
             <AvatarImage src={reel.ownerAvatar} alt={reel.ownerNameAr} />
-            <AvatarFallback className="bg-[#2D5A27] text-white text-xs font-arabic">
+            <AvatarFallback className="bg-[#2D5A27] text-xs font-arabic text-white">
               {reel.ownerNameAr[0]}
             </AvatarFallback>
           </Avatar>
-          <span className="font-arabic font-bold text-sm">{reel.ownerNameAr}</span>
-        </div>
-        {reel.caption && <p className="font-arabic text-sm leading-relaxed line-clamp-2">{reel.caption}</p>}
-        {reel.track && (
-          <div className="flex items-center gap-1.5 text-xs text-white/90">
-            <Music className="h-3.5 w-3.5" />
-            <span className="font-arabic truncate max-w-[200px]">
-              {reel.track.title} • {reel.track.artist}
+          <span className="font-arabic text-sm font-bold drop-shadow">{reel.ownerNameAr}</span>
+          {reel.source && reel.source !== 'upload' && (
+            <span className="flex items-center gap-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-arabic backdrop-blur">
+              <PlatformIcon source={reel.source} className="h-3 w-3" />
+              {PLATFORM_LABELS[reel.source]}
             </span>
+          )}
+        </div>
+
+        {/* Caption: collapsed shows one line + "مزيد"; expanded shows full text + hashtags */}
+        {(reel.caption || hashtags.length > 0) && (
+          <div className="space-y-1.5">
+            {reel.caption && (
+              <p className={cn('font-arabic text-[13px] leading-relaxed drop-shadow', !expanded && 'line-clamp-1')}>
+                {reel.caption}
+              </p>
+            )}
+
+            <AnimatePresence initial={false}>
+              {expanded && hashtags.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex flex-wrap gap-1.5 overflow-hidden"
+                >
+                  {hashtags.map((h) => (
+                    <span
+                      key={h}
+                      className="flex items-center gap-0.5 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-arabic backdrop-blur"
+                    >
+                      <Hash className="h-2.5 w-2.5" />
+                      {h}
+                    </span>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {reel.track && expanded && (
+              <div className="flex items-center gap-1.5 text-[11px] text-white/90">
+                <Music className="h-3 w-3" />
+                <span className="font-arabic truncate">
+                  {reel.track.title} • {reel.track.artist}
+                </span>
+              </div>
+            )}
+
+            {/* More / less toggle */}
+            {(reel.caption || hashtags.length > 0) && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-arabic font-semibold backdrop-blur active:scale-95"
+              >
+                {expanded ? (
+                  <>
+                    <ChevronUp className="h-3 w-3" />
+                    أقل
+                  </>
+                ) : (
+                  <>
+                    {hashtags.length > 0 ? `مزيد · ${hashtags.length} وسم` : 'مزيد'}
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -189,10 +321,12 @@ function RailButton({
     <button
       onClick={onClick}
       aria-label={label}
-      className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 drop-shadow-lg transition-transform active:scale-90"
+      className="flex flex-col items-center justify-center gap-0.5 drop-shadow-lg transition-transform active:scale-90"
     >
-      {children}
-      {count !== undefined && <span className="text-xs font-semibold drop-shadow">{count}</span>}
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/25 backdrop-blur">
+        {children}
+      </span>
+      {count !== undefined && <span className="text-[11px] font-semibold drop-shadow">{count}</span>}
     </button>
   )
 }
@@ -228,7 +362,6 @@ export function ReelsTab() {
     return () => window.removeEventListener('resize', measure)
   }, [])
 
-  // Track which reel is in view using IntersectionObserver.
   React.useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -255,33 +388,50 @@ export function ReelsTab() {
 
   return (
     <div ref={rootRef} className="relative w-full bg-black" style={{ height: feedHeight || undefined }}>
-      <div
-        ref={containerRef}
-        className="h-full w-full overflow-y-auto snap-y snap-mandatory scrollbar-hide overscroll-contain"
-      >
-        {reels.map((reel, i) => (
-          <div key={reel.id} data-reel-index={i} className="w-full" style={{ height: feedHeight || '100%' }}>
-            <ReelItem
-              reel={reel}
-              active={i === activeIndex}
-              muted={muted}
-              onToggleMute={() => setMuted((m) => !m)}
-              onOpenComments={setCommentsReelId}
-              onOpenShare={setShareReelId}
-              commentCount={commentCountFor(reel.id)}
-            />
-          </div>
-        ))}
-      </div>
+      {reels.length === 0 ? (
+        <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center text-white/80">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+            <Play className="h-7 w-7 fill-white text-white" />
+          </span>
+          <p className="font-arabic text-base font-bold text-white">لا توجد فيديوهات بعد</p>
+          <p className="font-arabic text-sm">أضف أول فيديو برابط من يوتيوب أو فيسبوك</p>
+          <button
+            onClick={() => setComposerOpen(true)}
+            className="mt-2 flex items-center gap-1.5 rounded-full bg-[#2D5A27] px-4 py-2.5 font-arabic text-sm font-bold text-white active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            إضافة فيديو
+          </button>
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-contain scrollbar-hide"
+        >
+          {reels.map((reel, i) => (
+            <div key={reel.id} data-reel-index={i} className="w-full" style={{ height: feedHeight || '100%' }}>
+              <ReelItem
+                reel={reel}
+                active={i === activeIndex}
+                muted={muted}
+                onToggleMute={() => setMuted((m) => !m)}
+                onOpenComments={setCommentsReelId}
+                onOpenShare={setShareReelId}
+                commentCount={commentCountFor(reel.id)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Create video button */}
       <button
         onClick={() => setComposerOpen(true)}
-        aria-label="إنشاء فيديو"
-        className="absolute top-3 start-3 z-20 flex items-center gap-1.5 rounded-full bg-[#2D5A27] px-3.5 py-2 text-white shadow-lg active:scale-95 transition-transform"
+        aria-label="إضافة فيديو"
+        className="absolute start-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-[#2D5A27] px-3 py-2 text-white shadow-lg transition-transform active:scale-95"
       >
         <Plus className="h-4 w-4" />
-        <span className="text-xs font-bold font-arabic">إنشاء</span>
+        <span className="font-arabic text-xs font-bold">إضافة</span>
       </button>
 
       {/* Comments sheet */}
@@ -290,10 +440,7 @@ export function ReelsTab() {
       {/* Share sheet */}
       <AnimatePresence>
         {shareReelId && (
-          <ShareSheet
-            reel={reels.find((r) => r.id === shareReelId)}
-            onClose={() => setShareReelId(null)}
-          />
+          <ShareSheet reel={reels.find((r) => r.id === shareReelId)} onClose={() => setShareReelId(null)} />
         )}
       </AnimatePresence>
 
@@ -308,7 +455,7 @@ function ShareSheet({ reel, onClose }: { reel?: Reel; onClose: () => void }) {
   const shareReel = useReelsStore((s) => s.shareReel)
   const [copied, setCopied] = React.useState(false)
 
-  const shareUrl = reel ? `https://rakobtana.app/video/${reel.id}` : 'https://rakobtana.app'
+  const shareUrl = reel ? reel.linkUrl || `https://rakobtana.app/video/${reel.id}` : 'https://rakobtana.app'
   const shareText = reel?.caption || 'شاهد هذا الفيديو على راكوبتنا'
 
   const track = () => reel && shareReel(reel.id)
@@ -375,11 +522,7 @@ function ShareSheet({ reel, onClose }: { reel?: Reel; onClose: () => void }) {
 
         <div className="grid grid-cols-4 gap-3">
           {targets.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => openTarget(t.url)}
-              className="flex flex-col items-center gap-2"
-            >
+            <button key={t.id} onClick={() => openTarget(t.url)} className="flex flex-col items-center gap-2">
               <span
                 className="flex h-14 w-14 items-center justify-center rounded-full text-white"
                 style={{ backgroundColor: t.color }}

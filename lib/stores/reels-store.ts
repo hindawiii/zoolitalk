@@ -38,6 +38,8 @@ export interface ReelTrack {
   artist: string
 }
 
+export type ReelSource = 'upload' | 'youtube' | 'facebook' | 'instagram' | 'tiktok' | 'twitter' | 'link'
+
 export interface Reel {
   id: string
   ownerId: string
@@ -47,6 +49,11 @@ export interface Reel {
   videoUrl: string
   posterUrl: string
   caption: string
+  hashtags?: string[]
+  // How the video is sourced: an uploaded blob or an external platform link.
+  source?: ReelSource
+  // Original link the user pasted (for external sources).
+  linkUrl?: string
   track?: ReelTrack
   likes: number
   shares: number
@@ -201,6 +208,53 @@ export const useReelsStore = create<ReelsState>()(
     },
   ),
 )
+
+// ----- Link / platform helpers (external video embeds) -----
+
+// Detect which platform a pasted link belongs to.
+export function detectPlatform(url: string): ReelSource {
+  const u = url.toLowerCase()
+  if (/youtube\.com|youtu\.be/.test(u)) return 'youtube'
+  if (/facebook\.com|fb\.watch|fb\.me/.test(u)) return 'facebook'
+  if (/instagram\.com/.test(u)) return 'instagram'
+  if (/tiktok\.com/.test(u)) return 'tiktok'
+  if (/twitter\.com|x\.com/.test(u)) return 'twitter'
+  return 'link'
+}
+
+export const PLATFORM_LABELS: Record<ReelSource, string> = {
+  upload: 'رفع',
+  youtube: 'يوتيوب',
+  facebook: 'فيسبوك',
+  instagram: 'إنستغرام',
+  tiktok: 'تيك توك',
+  twitter: 'تويتر',
+  link: 'رابط',
+}
+
+// Build an embeddable URL for platforms that support iframe embedding.
+// Returns null when the platform can't be embedded (we then show a link card).
+export function getEmbedUrl(url: string): string | null {
+  const platform = detectPlatform(url)
+  if (platform === 'youtube') {
+    // Extract the video id from the common YouTube URL shapes.
+    const match = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/,
+    )
+    const id = match?.[1]
+    return id ? `https://www.youtube.com/embed/${id}?rel=0&playsinline=1` : null
+  }
+  if (platform === 'facebook') {
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`
+  }
+  return null
+}
+
+// Extract #hashtags from a caption string.
+export function extractHashtags(text: string): string[] {
+  const matches = text.match(/#[\p{L}0-9_]+/gu) ?? []
+  return Array.from(new Set(matches.map((m) => m.slice(1))))
+}
 
 // Extract @mentions from a comment string.
 export function extractMentions(text: string): string[] {
