@@ -90,71 +90,11 @@ interface Job {
   applyUrl: string
 }
 
-// News Articles Array - Ready for RSS feed integration
-// To connect to a real RSS feed, replace this array with fetched data
-// Suggested RSS sources: Sudan Tribune, SUNA News, Al Rakoba
-const mockNews: NewsArticle[] = [
-  {
-    id: '1',
-    title: 'Sudan Peace Talks Progress in Jeddah',
-    titleAr: 'تقدم مباحثات السلام السودانية في جدة',
-    summary: 'International mediators report significant progress in the latest round of peace negotiations.',
-    summaryAr: 'أفاد الوسطاء الدوليون بتحقيق تقدم كبير في الجولة الأخيرة من مفاوضات السلام.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800',
-    source: 'Sudan Tribune',
-    sourceAr: 'سودان تريبيون',
-    category: 'sudan',
-    publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    url: 'https://example.com/article1',
-  },
-  {
-    id: '2',
-    title: 'Al Hilal Wins Championship Title',
-    titleAr: 'الهلال يفوز بلقب البطولة',
-    summary: 'Al Hilal FC secures another league championship with dominant performance.',
-    summaryAr: 'نادي الهلال يحرز لقب الدوري مجدداً بأداء مميز.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    source: 'Sudan Sports',
-    sourceAr: 'سودان سبورت',
-    category: 'sports',
-    publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    url: 'https://example.com/article2',
-  },
-  {
-    id: '3',
-    title: 'Central Bank Announces New Economic Measures',
-    titleAr: 'البنك المركزي يعلن عن إجراءات اقتصادية جديدة',
-    summary: 'New policies aim to stabilize the Sudanese Pound and boost foreign investment.',
-    summaryAr: 'السياسات الجديدة تهدف لتحقيق استقرار الجنيه السوداني وجذب الاستثمار الأجنبي.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800',
-    source: 'Sudan Economy',
-    sourceAr: 'اقتصاد السودان',
-    category: 'economy',
-    publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    url: 'https://example.com/article3',
-  },
-  {
-    id: '4',
-    title: 'UN General Assembly Discusses Regional Stability',
-    titleAr: 'الجمعية العامة للأمم المتحدة تناقش الاستقرار الإقليمي',
-    summary: 'World leaders gather to address humanitarian and security challenges.',
-    summaryAr: 'قادة العالم يجتمعون لمعالجة التحديات الإنسانية والأمنية.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800',
-    source: 'World News',
-    sourceAr: 'أخبار العالم',
-    category: 'world',
-    publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    url: 'https://example.com/article4',
-  },
-]
+// News Articles Array - Ready for new news content
+// Add news articles here following the NewsArticle interface above.
+// Each article needs: id, title/titleAr, summary/summaryAr, content/contentAr,
+// image, source/sourceAr, category, publishedAt, and url.
+const mockNews: NewsArticle[] = []
 
 // Sudanese Currency Rates (against SDG - Sudanese Pound)
 // These rates can be connected to a real API like Bankak or parallel market sources
@@ -262,7 +202,7 @@ const mockJobs: Job[] = [
     salaryRange: '$300 - $600/mo',
     salaryRangeAr: '300 - 600 دولار/شهر',
     description: 'Part-time remote data entry work, flexible hours.',
-    descriptionAr: 'عمل إدخال بيانات عن بعد بدوام جزئي، ساعات مرنة.',
+    descriptionAr: 'عمل إدخال بيانات عن بعد بدوام ��زئي، ساعات مرنة.',
     applyUrl: 'https://example.com/job3',
   },
 ]
@@ -491,7 +431,21 @@ export default function ZooliNews() {
 
             {/* Latest News Tab */}
             <TabsContent value="news" className="mt-0">
-              {/* News Grid - Tiles Layout for Mobile */}
+              {/* Empty state - ready for new news content */}
+              {filteredNews.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Globe className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className={cn('font-semibold text-base sm:text-lg mb-1', isRTL && 'font-arabic')}>
+                    {isRTL ? 'لا توجد أخبار حالياً' : 'No news yet'}
+                  </h3>
+                  <p className={cn('text-sm text-muted-foreground max-w-xs', isRTL && 'font-arabic')}>
+                    {isRTL ? 'سيتم إضافة المحتوى الإخباري قريباً' : 'News content will be added soon'}
+                  </p>
+                </div>
+              ) : (
+              /* News Grid - Tiles Layout for Mobile */
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
                 {filteredNews.map((article, idx) => (
                   <Card 
@@ -573,6 +527,7 @@ export default function ZooliNews() {
                   </Card>
                 ))}
               </div>
+              )}
             </TabsContent>
 
             {/* Opportunities Tab */}
