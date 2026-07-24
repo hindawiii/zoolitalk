@@ -18,8 +18,11 @@ import {
   confirmPhoneCode,
   resetRecaptcha,
   authErrorMessage,
+  setAuthPersistence,
   type ConfirmationResult,
 } from '@/lib/firebase/auth'
+
+const REMEMBER_KEY = 'rakobatna-remember-session'
 
 type Mode = 'signin' | 'signup'
 type Method = 'email' | 'phone'
@@ -35,7 +38,32 @@ export function AuthScreen() {
   const [mode, setMode] = React.useState<Mode>('signin')
   const [method, setMethod] = React.useState<Method>('email')
   const [showPassword, setShowPassword] = React.useState(false)
+  // "Remember me" — true keeps the user signed in across app restarts,
+  // false signs them out when they close the app. Defaults to keeping the
+  // session (most people expect to stay signed in), and is remembered locally.
+  const [remember, setRemember] = React.useState(true)
   const [loading, setLoading] = React.useState(false)
+
+  // Restore the user's previous "remember me" preference.
+  React.useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(REMEMBER_KEY)
+      if (stored !== null) setRemember(stored === 'true')
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [])
+
+  // Persist the session-length choice and apply it to Firebase immediately.
+  function updateRemember(next: boolean) {
+    setRemember(next)
+    try {
+      window.localStorage.setItem(REMEMBER_KEY, String(next))
+    } catch {
+      /* ignore storage errors */
+    }
+    void setAuthPersistence(next)
+  }
   const [socialLoading, setSocialLoading] = React.useState<'google' | 'facebook' | null>(null)
   const [error, setError] = React.useState('')
 
@@ -154,6 +182,7 @@ export function AuthScreen() {
     }
 
     try {
+      await setAuthPersistence(remember)
       if (mode === 'signup') {
         await emailSignUp(email.trim(), password, name.trim())
       } else {
@@ -182,6 +211,7 @@ export function AuthScreen() {
 
     setSocialLoading(provider)
     try {
+      await setAuthPersistence(remember)
       if (provider === 'google') await googleSignIn()
       else await facebookSignIn()
       completeAuth()
@@ -214,6 +244,7 @@ export function AuthScreen() {
     }
 
     try {
+      await setAuthPersistence(remember)
       resetRecaptcha()
       const confirmation = await sendPhoneCode(toE164(phone), RECAPTCHA_ID)
       confirmationRef.current = confirmation
@@ -406,6 +437,8 @@ export function AuthScreen() {
                 </button>
               )}
 
+              <RememberChoice value={remember} onChange={updateRemember} />
+
               {error && <ErrorText>{error}</ErrorText>}
 
               <SubmitButton loading={loading}>{isSignup ? 'إنشاء الحساب' : 'دخول'}</SubmitButton>
@@ -450,6 +483,8 @@ export function AuthScreen() {
                   className="min-w-0 flex-1 bg-transparent px-1 text-left text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
+
+              <RememberChoice value={remember} onChange={updateRemember} />
 
               {error && <ErrorText>{error}</ErrorText>}
 
@@ -546,6 +581,47 @@ export function AuthScreen() {
 }
 
 /* ---------- Sub-components ---------- */
+
+function RememberChoice({
+  value,
+  onChange,
+}: {
+  value: boolean
+  onChange: (next: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/50 px-3 py-2.5">
+      <div className="flex flex-col text-right">
+        <span className="text-[13px] font-semibold text-foreground">
+          {value ? 'إبقني مسجّلاً دائماً' : 'سجّل خروجي عند الإغلاق'}
+        </span>
+        <span className="text-[11px] leading-relaxed text-muted-foreground">
+          {value
+            ? 'ما تحتاج تسجّل دخول كل مرة تفتح التطبيق'
+            : 'راح نطلب منك تسجيل الدخول كل مرة تقفل التطبيق'}
+        </span>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={value}
+        aria-label="حفظ تسجيل الدخول"
+        onClick={() => onChange(!value)}
+        className={cn(
+          'relative h-6 w-11 shrink-0 rounded-full transition-colors',
+          value ? 'bg-primary' : 'bg-muted-foreground/40',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform',
+            value ? 'left-0.5' : 'left-[22px]',
+          )}
+        />
+      </button>
+    </div>
+  )
+}
 
 function SegmentButton({
   active,

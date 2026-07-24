@@ -10,6 +10,9 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   signOut as fbSignOut,
   type ConfirmationResult,
   type User as FirebaseUser,
@@ -18,6 +21,32 @@ import { auth } from '@/lib/firebase/config'
 import { isFirebaseConfigured } from '@/lib/firebase/config'
 
 export { isFirebaseConfigured }
+
+/**
+ * Control how long the signed-in session survives.
+ *
+ * - `remember: true`  → browserLocalPersistence: the user stays signed in
+ *   across full page reloads AND after closing/reopening the app.
+ * - `remember: false` → browserSessionPersistence: the session survives a
+ *   refresh within the same tab but is cleared once the app/tab is closed.
+ *
+ * We set this explicitly (instead of relying on the IndexedDB default) because
+ * the default `indexedDBLocalPersistence` can silently fall back to in-memory
+ * inside sandboxed/partitioned iframes — which is what made refreshing drop the
+ * user back to the login screen. localStorage-based persistence is reliable
+ * there, so choosing it keeps people signed in after a refresh.
+ */
+export async function setAuthPersistence(remember: boolean): Promise<void> {
+  if (!auth) return
+  try {
+    await setPersistence(
+      auth,
+      remember ? browserLocalPersistence : browserSessionPersistence,
+    )
+  } catch (err) {
+    console.error('[v0] Failed to set auth persistence:', err)
+  }
+}
 
 /**
  * Translate common Firebase auth error codes into friendly Arabic messages.
