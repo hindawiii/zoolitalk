@@ -42,6 +42,10 @@ export function NewsSlider({
   const { isRTL } = useLanguage()
   
   if (news.length === 0) return null
+
+  // Preview only: show the top few headlines here. The full list lives in the
+  // "Latest News" tab below, so we avoid rendering the entire feed twice.
+  const previewNews = news.slice(0, 4)
   
   return (
     <div className="relative w-full" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -71,7 +75,7 @@ export function NewsSlider({
       {/* Grid Layout for Mobile */}
       <div className="px-3 sm:px-4">
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          {news.map((article, index) => (
+          {previewNews.map((article, index) => (
             <NewsCard
               key={article.id}
               article={article}
