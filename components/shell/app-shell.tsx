@@ -6,6 +6,7 @@ import { Settings } from 'lucide-react'
 import { BottomNavigation } from './bottom-navigation'
 import { SettingsDrawer } from './settings-drawer'
 import { MessageNotification } from '@/components/shared/message-notification'
+import { PullToRefresh } from '@/components/shared/pull-to-refresh'
 import { useAppStore, type TabId } from '@/lib/stores/app-store'
 import { useLanguage } from '@/components/providers/language-provider'
 import { Button } from '@/components/ui/button'
@@ -108,7 +109,10 @@ export function AppShell() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden content-area w-full max-w-[100vw] box-border">
+      <PullToRefresh
+        onRefresh={() => window.location.reload()}
+        className="flex-1 min-h-0 content-area w-full max-w-[100vw] box-border"
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -124,7 +128,7 @@ export function AppShell() {
             </React.Suspense>
           </motion.div>
         </AnimatePresence>
-      </main>
+      </PullToRefresh>
 
       {/* Bottom Navigation */}
       <BottomNavigation />

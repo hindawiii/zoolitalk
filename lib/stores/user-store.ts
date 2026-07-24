@@ -5,6 +5,17 @@ import { db, isFirestoreAvailable } from '@/lib/firebase/config'
 import type { FirebaseUser } from '@/lib/firebase/auth'
 import * as social from '@/lib/firebase/social'
 
+// Firestore rejects `undefined` field values, which was throwing during the
+// very first sign-in (the base profile has an undefined `gender`). Strip any
+// undefined keys before writing so profile creation/sync succeeds.
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) out[key] = value
+  }
+  return out as Partial<T>
+}
+
 export type Gender = 'male' | 'female'
 export type SocialStatus = 'single' | 'taken' | 'engaged' | 'married' | 'complicated' | 'gave_up'
 export type ProfessionalStatus = 'student' | 'employee' | 'freelancer' | 'unemployed'
@@ -142,22 +153,24 @@ export const useUserStore = create<UserState>()(
         try {
           const userRef = doc(db, 'users', currentUser.id)
           await setDoc(userRef, {
-            id: currentUser.id,
-            username: currentUser.username,
-            name: currentUser.name,
-            nameAr: currentUser.nameAr,
-            nickname: currentUser.nickname,
-            avatar: currentUser.avatar,
-            bio: currentUser.bio,
-            bioAr: currentUser.bioAr,
-            gender: currentUser.gender,
-            location: currentUser.location,
-            socialStatus: currentUser.socialStatus,
-            professionalStatus: currentUser.professionalStatus,
-            rank: currentUser.rank,
-            rankTitle: currentUser.rankTitle,
-            isVerified: currentUser.isVerified,
-            isOnline: currentUser.isOnline,
+            ...stripUndefined({
+              id: currentUser.id,
+              username: currentUser.username,
+              name: currentUser.name,
+              nameAr: currentUser.nameAr,
+              nickname: currentUser.nickname,
+              avatar: currentUser.avatar,
+              bio: currentUser.bio,
+              bioAr: currentUser.bioAr,
+              gender: currentUser.gender,
+              location: currentUser.location,
+              socialStatus: currentUser.socialStatus,
+              professionalStatus: currentUser.professionalStatus,
+              rank: currentUser.rank,
+              rankTitle: currentUser.rankTitle,
+              isVerified: currentUser.isVerified,
+              isOnline: currentUser.isOnline,
+            }),
             lastSeen: serverTimestamp(),
             updatedAt: serverTimestamp(),
           }, { merge: true })
@@ -293,7 +306,7 @@ export const useUserStore = create<UserState>()(
           } else {
             // First sign-in: create the profile document in Firestore.
             await setDoc(userRef, {
-              ...baseProfile,
+              ...stripUndefined(baseProfile),
               lastSeen: serverTimestamp(),
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),

@@ -57,7 +57,7 @@ export type GiftType = 'jabana' | 'crown' | 'shield' | 'heart' | 'star' | string
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Language defaults to Arabic
       language: 'ar',
       setLanguage: (language) => set({ language }),
@@ -109,9 +109,11 @@ export const useAppStore = create<AppState>()(
     {
       name: 'rakobatna-app-storage',
       storage: createJSONStorage(() => localStorage),
+      // NOTE: `activeTab` is intentionally NOT persisted so the app always
+      // opens on Al-Wansa (the first section) rather than restoring whatever
+      // tab was open last time.
       partialize: (state) => ({
         language: state.language,
-        activeTab: state.activeTab,
         dataSaverEnabled: state.dataSaverEnabled,
         showOnlineStatus: state.showOnlineStatus,
       }),
