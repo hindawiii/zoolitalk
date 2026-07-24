@@ -217,7 +217,7 @@ const mockJobs: Job[] = [
 
 // Category config
 const categoryConfig: Record<NewsCategory, { icon: React.ElementType; labelEn: string; labelAr: string }> = {
-  sudan: { icon: MapPin, labelEn: 'Sudan & Arab', labelAr: 'السودان والعرب' },
+  sudan: { icon: MapPin, labelEn: 'Arabic', labelAr: 'العربية' },
   sports: { icon: Dribbble, labelEn: 'Sports', labelAr: 'رياضة' },
   economy: { icon: TrendingUp, labelEn: 'Economy', labelAr: 'اقتصاد' },
   world: { icon: Globe, labelEn: 'World', labelAr: 'العالم' },
@@ -399,15 +399,32 @@ export default function ZooliNews() {
         </div>
 
         {/* Category Tabs */}
-        <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as NewsCategory | 'all')}>
-          <TabsList className="w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap">
-            <TabsTrigger value="all" className={cn('shrink-0', isRTL && 'font-arabic')}>
+        <Tabs
+          dir={isRTL ? 'rtl' : 'ltr'}
+          value={activeCategory}
+          onValueChange={(v) => setActiveCategory(v as NewsCategory | 'all')}
+        >
+          <TabsList className="flex w-full justify-start gap-2 overflow-x-auto scrollbar-hide bg-transparent p-0 h-auto rounded-none">
+            <TabsTrigger
+              value="all"
+              className={cn(
+                'shrink-0 rounded-full border border-border bg-muted px-4 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary',
+                isRTL && 'font-arabic',
+              )}
+            >
               {isRTL ? 'الكل' : 'All'}
             </TabsTrigger>
             {(Object.keys(categoryConfig) as NewsCategory[]).map((cat) => {
               const config = categoryConfig[cat]
               return (
-                <TabsTrigger key={cat} value={cat} className={cn('shrink-0', isRTL && 'font-arabic')}>
+                <TabsTrigger
+                  key={cat}
+                  value={cat}
+                  className={cn(
+                    'shrink-0 rounded-full border border-border bg-muted px-4 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary',
+                    isRTL && 'font-arabic',
+                  )}
+                >
                   {isRTL ? config.labelAr : config.labelEn}
                 </TabsTrigger>
               )
