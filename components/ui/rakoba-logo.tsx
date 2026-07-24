@@ -32,7 +32,7 @@ export function RakobaLogo({ className, size = 'md', framed = false }: RakobaLog
 
   const img = (
     <Image
-      src="/brand/rakobatna-mark.png"
+      src="/brand/rakobatna-mark-v2.png"
       alt="راكوبتنا"
       width={px}
       height={px}
