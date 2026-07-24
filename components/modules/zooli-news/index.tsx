@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import useSWR from 'swr'
 import Image from 'next/image'
 import { 
   TrendingUp, 
@@ -90,71 +91,18 @@ interface Job {
   applyUrl: string
 }
 
-// News Articles Array - Ready for RSS feed integration
-// To connect to a real RSS feed, replace this array with fetched data
-// Suggested RSS sources: Sudan Tribune, SUNA News, Al Rakoba
-const mockNews: NewsArticle[] = [
-  {
-    id: '1',
-    title: 'Sudan Peace Talks Progress in Jeddah',
-    titleAr: 'تقدم مباحثات السلام السودانية في جدة',
-    summary: 'International mediators report significant progress in the latest round of peace negotiations.',
-    summaryAr: 'أفاد الوسطاء الدوليون بتحقيق تقدم كبير في الجولة الأخيرة من مفاوضات السلام.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800',
-    source: 'Sudan Tribune',
-    sourceAr: 'سودان تريبيون',
-    category: 'sudan',
-    publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    url: 'https://example.com/article1',
-  },
-  {
-    id: '2',
-    title: 'Al Hilal Wins Championship Title',
-    titleAr: 'الهلال يفوز بلقب البطولة',
-    summary: 'Al Hilal FC secures another league championship with dominant performance.',
-    summaryAr: 'نادي الهلال يحرز لقب الدوري مجدداً بأداء مميز.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    source: 'Sudan Sports',
-    sourceAr: 'سودان سبورت',
-    category: 'sports',
-    publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    url: 'https://example.com/article2',
-  },
-  {
-    id: '3',
-    title: 'Central Bank Announces New Economic Measures',
-    titleAr: 'البنك المركزي يعلن عن إجراءات اقتصادية جديدة',
-    summary: 'New policies aim to stabilize the Sudanese Pound and boost foreign investment.',
-    summaryAr: 'السياسات الجديدة تهدف لتحقيق استقرار الجنيه السوداني وجذب الاستثمار الأجنبي.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800',
-    source: 'Sudan Economy',
-    sourceAr: 'اقتصاد السودان',
-    category: 'economy',
-    publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    url: 'https://example.com/article3',
-  },
-  {
-    id: '4',
-    title: 'UN General Assembly Discusses Regional Stability',
-    titleAr: 'الجمعية العامة للأمم المتحدة تناقش الاستقرار الإقليمي',
-    summary: 'World leaders gather to address humanitarian and security challenges.',
-    summaryAr: 'قادة العالم يجتمعون لمعالجة التحديات الإنسانية والأمنية.',
-    content: 'Full article content here...',
-    contentAr: 'محتوى المقال الكامل هنا...',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800',
-    source: 'World News',
-    sourceAr: 'أخبار العالم',
-    category: 'world',
-    publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-    url: 'https://example.com/article4',
-  },
-]
+// Raw article shape returned by the /api/news route (publishedAt is an ISO string).
+interface ApiNewsArticle extends Omit<NewsArticle, 'publishedAt'> {
+  publishedAt: string
+}
+
+// SWR fetcher for the live news API
+const newsFetcher = async (url: string): Promise<NewsArticle[]> => {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to load news')
+  const data: { articles: ApiNewsArticle[] } = await res.json()
+  return (data.articles ?? []).map((a) => ({ ...a, publishedAt: new Date(a.publishedAt) }))
+}
 
 // Sudanese Currency Rates (against SDG - Sudanese Pound)
 // These rates can be connected to a real API like Bankak or parallel market sources
@@ -262,14 +210,14 @@ const mockJobs: Job[] = [
     salaryRange: '$300 - $600/mo',
     salaryRangeAr: '300 - 600 دولار/شهر',
     description: 'Part-time remote data entry work, flexible hours.',
-    descriptionAr: 'عمل إدخال بيانات عن بعد بدوام جزئي، ساعات مرنة.',
+    descriptionAr: 'عمل إدخال بيانات عن بعد بدوام ��زئي، ساعات مرنة.',
     applyUrl: 'https://example.com/job3',
   },
 ]
 
 // Category config
 const categoryConfig: Record<NewsCategory, { icon: React.ElementType; labelEn: string; labelAr: string }> = {
-  sudan: { icon: Globe, labelEn: 'Sudan', labelAr: 'السودان' },
+  sudan: { icon: MapPin, labelEn: 'Sudan & Arab', labelAr: 'السودان والعرب' },
   sports: { icon: Dribbble, labelEn: 'Sports', labelAr: 'رياضة' },
   economy: { icon: TrendingUp, labelEn: 'Economy', labelAr: 'اقتصاد' },
   world: { icon: Globe, labelEn: 'World', labelAr: 'العالم' },
@@ -279,8 +227,19 @@ export default function ZooliNews() {
   const { isRTL, t } = useLanguage()
   const [activeCategory, setActiveCategory] = React.useState<NewsCategory | 'all'>('all')
   const [selectedArticle, setSelectedArticle] = React.useState<NewsArticle | null>(null)
-  const [isRefreshing, setIsRefreshing] = React.useState(false)
   const [mainTab, setMainTab] = React.useState<'news' | 'opportunities'>('news')
+
+  // Live news from official global sources, auto-refreshing every 5 minutes
+  const { data: newsData, isLoading: isNewsLoading, isValidating, mutate } = useSWR<NewsArticle[]>(
+    '/api/news?category=all',
+    newsFetcher,
+    {
+      refreshInterval: 5 * 60 * 1000,
+      revalidateOnFocus: true,
+      dedupingInterval: 60 * 1000,
+    },
+  )
+  const articles = newsData ?? []
   
   // Opportunities state
   const [selectedOpportunity, setSelectedOpportunity] = React.useState<Opportunity | null>(null)
@@ -316,13 +275,11 @@ export default function ZooliNews() {
   const parallelResult = amount * (selectedRate?.sellRate || 0)
 
   const filteredNews = activeCategory === 'all' 
-    ? mockNews 
-    : mockNews.filter(n => n.category === activeCategory)
+    ? articles 
+    : articles.filter(n => n.category === activeCategory)
 
   const handleRefresh = async () => {
-    setIsRefreshing(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setIsRefreshing(false)
+    await mutate()
   }
 
   const formatTimeAgo = (date: Date) => {
@@ -434,9 +391,10 @@ export default function ZooliNews() {
             variant="ghost" 
             size="icon"
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isValidating}
+            aria-label={isRTL ? 'تحديث الأخبار' : 'Refresh news'}
           >
-            <RefreshCw className={cn('h-5 w-5', isRefreshing && 'animate-spin')} />
+            <RefreshCw className={cn('h-5 w-5', isValidating && 'animate-spin')} />
           </Button>
         </div>
 
@@ -491,7 +449,39 @@ export default function ZooliNews() {
 
             {/* Latest News Tab */}
             <TabsContent value="news" className="mt-0">
-              {/* News Grid - Tiles Layout for Mobile */}
+              {/* Loading skeleton */}
+              {isNewsLoading && articles.length === 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        'rounded-xl overflow-hidden border border-border/50 bg-card',
+                        i === 0 && 'col-span-2 md:col-span-2',
+                      )}
+                    >
+                      <div className={cn('bg-muted animate-pulse', i === 0 ? 'aspect-video' : 'aspect-[4/3]')} />
+                      <div className="p-2.5 space-y-2">
+                        <div className="h-3 bg-muted rounded animate-pulse" />
+                        <div className="h-3 w-2/3 bg-muted rounded animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredNews.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                    <Globe className="w-7 h-7 text-primary" />
+                  </div>
+                  <h3 className={cn('font-semibold text-base sm:text-lg mb-1', isRTL && 'font-arabic')}>
+                    {isRTL ? 'لا توجد أخبار حالياً' : 'No news yet'}
+                  </h3>
+                  <p className={cn('text-sm text-muted-foreground max-w-xs', isRTL && 'font-arabic')}>
+                    {isRTL ? 'تعذر تحميل الأخبار، حاول التحديث لاحقاً' : 'Could not load news, try refreshing later'}
+                  </p>
+                </div>
+              ) : (
+              /* News Grid - Tiles Layout for Mobile */
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
                 {filteredNews.map((article, idx) => (
                   <Card 
@@ -573,6 +563,7 @@ export default function ZooliNews() {
                   </Card>
                 ))}
               </div>
+              )}
             </TabsContent>
 
             {/* Opportunities Tab */}
