@@ -7,8 +7,8 @@ interface RakobaLogoProps {
   className?: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
   /**
-   * Wraps the mark in a themed rounded frame so the bright emerald logo
-   * blends with the darker forest-green app chrome instead of clashing.
+   * Wraps the mark in a subtle themed rounded frame that matches the
+   * forest-green / brown brand palette.
    */
   framed?: boolean
 }
@@ -37,7 +37,6 @@ export function RakobaLogo({ className, size = 'md', framed = false }: RakobaLog
       width={px}
       height={px}
       priority
-      quality={90}
       sizes={`${px}px`}
       className={cn(
         'select-none object-contain',
