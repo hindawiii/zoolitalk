@@ -118,6 +118,7 @@ interface StoryState {
   reactToStory: (id: string, reaction: StoryReaction) => void
   markGroupViewed: (ownerId: string) => void
   republishStory: (id: string) => void
+  archiveStory: (id: string) => void
   expireOldStories: () => void
 
   // highlights
@@ -196,6 +197,16 @@ export const useStoryStore = create<StoryState>()(
         }
         set((state) => ({ stories: [newStory, ...state.stories] }))
       },
+
+      archiveStory: (id) =>
+        set((state) => {
+          const story = state.stories.find((item) => item.id === id)
+          if (!story) return {}
+          return {
+            stories: state.stories.filter((item) => item.id !== id),
+            archived: [{ ...story, viewed: true }, ...state.archived.filter((item) => item.id !== id)],
+          }
+        }),
 
       expireOldStories: () => {
         const ts = Date.now()
