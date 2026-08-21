@@ -2,8 +2,9 @@
 
 import * as React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Archive } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useUserStore } from '@/lib/stores/user-store'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
 import {
@@ -36,6 +37,8 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
   const { isRTL } = useLanguage()
   const reactToStory = useStoryStore((s) => s.reactToStory)
   const markGroupViewed = useStoryStore((s) => s.markGroupViewed)
+  const archiveStory = useStoryStore((s) => s.archiveStory)
+  const currentUser = useUserStore((s) => s.currentUser)
 
   const [groupIndex, setGroupIndex] = React.useState(initialGroupIndex)
   const [storyIndex, setStoryIndex] = React.useState(0)
@@ -46,6 +49,7 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
 
   const group = groups[groupIndex]
   const story: Story | undefined = group?.stories[storyIndex]
+  const isOwnStory = Boolean(story && currentUser?.id === story.ownerId)
 
   const rafRef = React.useRef<number | null>(null)
   const startRef = React.useRef<number>(0)
