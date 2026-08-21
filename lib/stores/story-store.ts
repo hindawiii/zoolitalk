@@ -24,6 +24,9 @@ export interface StoryTextOverlay {
   letterSpacing?: number
   shadow?: boolean
   outline?: boolean
+  background?: string
+  backgroundOpacity?: number
+  stretch?: number
 }
 
 export type StickerType = 'emoji' | 'poll' | 'question' | 'countdown' | 'music'
