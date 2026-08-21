@@ -64,6 +64,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   const { cropExisting, cropPortal } = useImageCrop()
 
   const [media, setMedia] = React.useState<{ url: string; type: 'image' | 'video' } | null>(null)
+  const [queuedMedia, setQueuedMedia] = React.useState<{ url: string; type: 'image' | 'video' }[]>([])
   const [filter, setFilter] = React.useState<StoryFilter>('original')
   const [texts, setTexts] = React.useState<StoryTextOverlay[]>([])
   const [stickers, setStickers] = React.useState<StorySticker[]>([])
@@ -84,6 +85,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
 
   const reset = React.useCallback(() => {
     setMedia(null)
+    setQueuedMedia([])
     setFilter('original')
     setTexts([])
     setStickers([])
@@ -97,6 +99,22 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   }, [open, reset])
 
   // ----- media picking -----
+  const handleFiles = async (files?: FileList | null) => {
+    if (!files?.length) return
+    const selectedFiles = Array.from(files)
+    const [firstFile, ...additionalFiles] = selectedFiles
+    await handleFile(firstFile)
+    if (additionalFiles.length) {
+      const additionalMedia = await Promise.all(
+        additionalFiles.map(async (file) => ({
+          url: file.type.startsWith('video') ? URL.createObjectURL(file) : await fileToDataUrl(file),
+          type: file.type.startsWith('video') ? 'video' as const : 'image' as const,
+        })),
+      )
+      setQueuedMedia((previous) => [...previous, ...additionalMedia])
+    }
+  }
+
   const handleFile = async (file?: File) => {
     if (!file) return
     // Videos go straight to the editor stage (already a 9:16 preview).
@@ -235,17 +253,20 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   const handlePublish = () => {
     if (!media || !currentUser) return
     const drawingUrl = hasDrawing ? canvasRef.current?.toDataURL('image/png') : undefined
-    addStory({
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
-      ownerNameAr: currentUser.nameAr,
-      ownerAvatar: currentUser.avatar,
-      mediaUrl: media.url,
-      mediaType: media.type,
-      filter,
-      texts,
-      stickers,
-      drawingUrl,
+    const storiesToPublish = [media, ...queuedMedia]
+    storiesToPublish.forEach((storyMedia) => {
+      addStory({
+        ownerId: currentUser.id,
+        ownerName: currentUser.name,
+        ownerNameAr: currentUser.nameAr,
+        ownerAvatar: currentUser.avatar,
+        mediaUrl: storyMedia.url,
+        mediaType: storyMedia.type,
+        filter,
+        texts,
+        stickers,
+        drawingUrl,
+      })
     })
     onPublished?.()
     onClose()
@@ -267,8 +288,12 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
           ref={galleryInputRef}
           type="file"
           accept="image/*,video/*"
+          multiple
           className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0] ?? undefined)}
+          onChange={(e) => {
+            void handleFiles(e.target.files)
+            e.currentTarget.value = ''
+          }}
         />
         <input
           ref={cameraInputRef}
