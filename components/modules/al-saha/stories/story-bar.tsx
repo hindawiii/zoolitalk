@@ -30,9 +30,26 @@ export function StoryBar() {
     [stories, currentUser?.id],
   )
 
-  const ownGroup = groups.find((g) => g.ownerId === currentUser?.id)
+  // A user's stories can have legacy owner IDs after authentication/profile hydration.
+  // Normalize all records belonging to the signed-in user into one group before rendering.
+  const ownGroups = groups.filter(
+    (group) =>
+      group.ownerId === currentUser?.id ||
+      (Boolean(currentUser?.nameAr) && group.ownerNameAr === currentUser.nameAr) ||
+      (Boolean(currentUser?.avatar) && group.ownerAvatar === currentUser.avatar),
+  )
+  const ownGroup = ownGroups.length
+    ? {
+        ...ownGroups[0],
+        ownerId: currentUser?.id ?? ownGroups[0].ownerId,
+        stories: ownGroups.flatMap((group) => group.stories).sort((a, b) => a.createdAt - b.createdAt),
+        allViewed: ownGroups.every((group) => group.allViewed),
+      }
+    : undefined
   const ownHasStory = Boolean(ownGroup)
-  const otherGroups = groups.filter((g) => g.ownerId !== currentUser?.id)
+  const ownGroupIds = new Set(ownGroups.map((group) => group.ownerId))
+  const normalizedGroups = ownGroup ? [ownGroup, ...groups.filter((group) => !ownGroupIds.has(group.ownerId))] : groups
+  const otherGroups = normalizedGroups.filter((g) => g.ownerId !== ownGroup?.ownerId)
 
   // Latest image frame for the current user's own story card (skip videos).
   const ownLatest = ownGroup?.stories?.[ownGroup.stories.length - 1]
@@ -42,17 +59,30 @@ export function StoryBar() {
     <div dir="rtl" className="py-3 border-b border-[#2D5A27]/15 bg-white dark:bg-card w-full">
       <div className="flex gap-2.5 px-3 overflow-x-auto scrollbar-hide w-full">
         {/* Add Story / Own story — Facebook-style rectangular card */}
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => {
             if (ownHasStory) {
-              const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
+              const idx = normalizedGroups.findIndex((g) => g.ownerId === ownGroup?.ownerId)
               setViewerIndex(idx)
             } else {
               setComposerOpen(true)
             }
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              if (ownHasStory) {
+                const idx = normalizedGroups.findIndex((g) => g.ownerId === ownGroup?.ownerId)
+                setViewerIndex(idx)
+              } else {
+                setComposerOpen(true)
+              }
+            }
+          }}
           aria-label={ownHasStory ? 'عرض قصتك' : 'إضافة قصة'}
-          className="relative flex-shrink-0 h-40 w-24 overflow-hidden rounded-xl border border-[#2D5A27]/15 bg-[#2D5A27]/5 shadow-sm"
+          className="relative flex-shrink-0 h-40 w-24 overflow-hidden rounded-xl border border-[#2D5A27]/15 bg-[#2D5A27]/5 shadow-sm cursor-pointer"
         >
           {/* Top image / avatar area */}
           <div className="relative h-[68%] w-full overflow-hidden bg-[#2D5A27]/10">
@@ -77,22 +107,22 @@ export function StoryBar() {
           </div>
 
           {/* + badge (centered on the divider) */}
-          {!ownHasStory && (
-            <span
-              onClick={(e) => {
-                e.stopPropagation()
-                setComposerOpen(true)
-              }}
-              className="absolute bottom-[26%] left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#2D5A27] border-[3px] border-white dark:border-card"
-            >
-              <Plus className="h-3.5 w-3.5 text-white" />
-            </span>
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setComposerOpen(true)
+            }}
+            aria-label="إضافة قصة جديدة"
+            className="absolute bottom-[26%] left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#2D5A27] border-[3px] border-white dark:border-card transition-transform hover:scale-110 active:scale-95"
+          >
+            <Plus className="h-3.5 w-3.5 text-white" />
+          </button>
+        </div>
 
         {/* Other users' stories — Facebook-style rectangular cards */}
         {otherGroups.map((g) => {
-          const idx = groups.findIndex((x) => x.ownerId === g.ownerId)
+          const idx = normalizedGroups.findIndex((x) => x.ownerId === g.ownerId)
           const latest = g.stories?.[g.stories.length - 1]
           const preview = latest?.mediaType === 'image' ? latest.mediaUrl : undefined
           return (
@@ -143,9 +173,9 @@ export function StoryBar() {
       <StoryComposer open={composerOpen} onClose={() => setComposerOpen(false)} />
 
       {/* Viewer */}
-      {viewerIndex !== null && groups[viewerIndex] && (
+      {viewerIndex !== null && normalizedGroups[viewerIndex] && (
         <StoryViewer
-          groups={groups}
+          groups={normalizedGroups}
           initialGroupIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}
         />

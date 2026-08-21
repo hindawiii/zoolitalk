@@ -14,6 +14,7 @@ import {
   Camera,
   Bold,
   Italic,
+  Crop,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -64,6 +65,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   const { cropExisting, cropPortal } = useImageCrop()
 
   const [media, setMedia] = React.useState<{ url: string; type: 'image' | 'video' } | null>(null)
+  const [queuedMedia, setQueuedMedia] = React.useState<{ url: string; type: 'image' | 'video' }[]>([])
   const [filter, setFilter] = React.useState<StoryFilter>('original')
   const [texts, setTexts] = React.useState<StoryTextOverlay[]>([])
   const [stickers, setStickers] = React.useState<StorySticker[]>([])
@@ -84,6 +86,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
 
   const reset = React.useCallback(() => {
     setMedia(null)
+    setQueuedMedia([])
     setFilter('original')
     setTexts([])
     setStickers([])
@@ -97,6 +100,22 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   }, [open, reset])
 
   // ----- media picking -----
+  const handleFiles = async (files?: FileList | null) => {
+    if (!files?.length) return
+    const selectedFiles = Array.from(files)
+    const [firstFile, ...additionalFiles] = selectedFiles
+    await handleFile(firstFile)
+    if (additionalFiles.length) {
+      const additionalMedia = await Promise.all(
+        additionalFiles.map(async (file) => ({
+          url: file.type.startsWith('video') ? URL.createObjectURL(file) : await fileToDataUrl(file),
+          type: file.type.startsWith('video') ? 'video' as const : 'image' as const,
+        })),
+      )
+      setQueuedMedia((previous) => [...previous, ...additionalMedia])
+    }
+  }
+
   const handleFile = async (file?: File) => {
     if (!file) return
     // Videos go straight to the editor stage (already a 9:16 preview).
@@ -104,12 +123,10 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
       setMedia({ url: URL.createObjectURL(file), type: 'video' })
       return
     }
-    // Images are routed through the crop/preview editor (9:16) before editing.
+    // Keep the original image intact by default. Cropping is now user-controlled.
     try {
       const dataUrl = await fileToDataUrl(file)
-      cropExisting(dataUrl, 'story', (croppedUrl) => {
-        setMedia({ url: croppedUrl, type: 'image' })
-      })
+      setMedia({ url: dataUrl, type: 'image' })
     } catch (err) {
       console.error('[v0] Failed to read story image:', err)
     }
@@ -235,17 +252,20 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
   const handlePublish = () => {
     if (!media || !currentUser) return
     const drawingUrl = hasDrawing ? canvasRef.current?.toDataURL('image/png') : undefined
-    addStory({
-      ownerId: currentUser.id,
-      ownerName: currentUser.name,
-      ownerNameAr: currentUser.nameAr,
-      ownerAvatar: currentUser.avatar,
-      mediaUrl: media.url,
-      mediaType: media.type,
-      filter,
-      texts,
-      stickers,
-      drawingUrl,
+    const storiesToPublish = [media, ...queuedMedia]
+    storiesToPublish.forEach((storyMedia) => {
+      addStory({
+        ownerId: currentUser.id,
+        ownerName: currentUser.name,
+        ownerNameAr: currentUser.nameAr,
+        ownerAvatar: currentUser.avatar,
+        mediaUrl: storyMedia.url,
+        mediaType: storyMedia.type,
+        filter,
+        texts,
+        stickers,
+        drawingUrl,
+      })
     })
     onPublished?.()
     onClose()
@@ -267,8 +287,12 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
           ref={galleryInputRef}
           type="file"
           accept="image/*,video/*"
+          multiple
           className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0] ?? undefined)}
+          onChange={(e) => {
+            void handleFiles(e.target.files)
+            e.currentTarget.value = ''
+          }}
         />
         <input
           ref={cameraInputRef}
@@ -321,6 +345,19 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                 <X className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-2">
+                {media.type === 'image' && (
+                  <ToolButton
+                    active={false}
+                    onClick={() =>
+                      cropExisting(media.url, 'story', (croppedUrl) =>
+                        setMedia({ url: croppedUrl, type: 'image' }),
+                      )
+                    }
+                    label="قص الصورة"
+                  >
+                    <Crop className="h-5 w-5" />
+                  </ToolButton>
+                )}
                 <ToolButton active={tool === 'text'} onClick={addText} label="نص">
                   <Type className="h-5 w-5" />
                 </ToolButton>
@@ -354,7 +391,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                     src={media.url || '/placeholder.svg'}
                     alt="story"
                     crossOrigin="anonymous"
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain"
                     style={{ filter: FILTER_CSS[filter] }}
                   />
                 ) : (
