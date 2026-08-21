@@ -14,6 +14,7 @@ import {
   Camera,
   Bold,
   Italic,
+  Crop,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -122,12 +123,10 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
       setMedia({ url: URL.createObjectURL(file), type: 'video' })
       return
     }
-    // Images are routed through the crop/preview editor (9:16) before editing.
+    // Keep the original image intact by default. Cropping is now user-controlled.
     try {
       const dataUrl = await fileToDataUrl(file)
-      cropExisting(dataUrl, 'story', (croppedUrl) => {
-        setMedia({ url: croppedUrl, type: 'image' })
-      })
+      setMedia({ url: dataUrl, type: 'image' })
     } catch (err) {
       console.error('[v0] Failed to read story image:', err)
     }
@@ -346,6 +345,19 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                 <X className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-2">
+                {media.type === 'image' && (
+                  <ToolButton
+                    active={false}
+                    onClick={() =>
+                      cropExisting(media.url, 'story', (croppedUrl) =>
+                        setMedia({ url: croppedUrl, type: 'image' }),
+                      )
+                    }
+                    label="قص الصورة"
+                  >
+                    <Crop className="h-5 w-5" />
+                  </ToolButton>
+                )}
                 <ToolButton active={tool === 'text'} onClick={addText} label="نص">
                   <Type className="h-5 w-5" />
                 </ToolButton>
@@ -379,7 +391,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                     src={media.url || '/placeholder.svg'}
                     alt="story"
                     crossOrigin="anonymous"
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain"
                     style={{ filter: FILTER_CSS[filter] }}
                   />
                 ) : (
