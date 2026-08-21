@@ -30,9 +30,26 @@ export function StoryBar() {
     [stories, currentUser?.id],
   )
 
-  const ownGroup = groups.find((g) => g.ownerId === currentUser?.id)
+  // A user's stories can have legacy owner IDs after authentication/profile hydration.
+  // Normalize all records belonging to the signed-in user into one group before rendering.
+  const ownGroups = groups.filter(
+    (group) =>
+      group.ownerId === currentUser?.id ||
+      (Boolean(currentUser?.nameAr) && group.ownerNameAr === currentUser.nameAr) ||
+      (Boolean(currentUser?.avatar) && group.ownerAvatar === currentUser.avatar),
+  )
+  const ownGroup = ownGroups.length
+    ? {
+        ...ownGroups[0],
+        ownerId: currentUser?.id ?? ownGroups[0].ownerId,
+        stories: ownGroups.flatMap((group) => group.stories).sort((a, b) => a.createdAt - b.createdAt),
+        allViewed: ownGroups.every((group) => group.allViewed),
+      }
+    : undefined
   const ownHasStory = Boolean(ownGroup)
-  const otherGroups = groups.filter((g) => g.ownerId !== currentUser?.id)
+  const ownGroupIds = new Set(ownGroups.map((group) => group.ownerId))
+  const normalizedGroups = ownGroup ? [ownGroup, ...groups.filter((group) => !ownGroupIds.has(group.ownerId))] : groups
+  const otherGroups = normalizedGroups.filter((g) => g.ownerId !== ownGroup?.ownerId)
 
   // Latest image frame for the current user's own story card (skip videos).
   const ownLatest = ownGroup?.stories?.[ownGroup.stories.length - 1]
@@ -47,7 +64,7 @@ export function StoryBar() {
           tabIndex={0}
           onClick={() => {
             if (ownHasStory) {
-              const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
+              const idx = normalizedGroups.findIndex((g) => g.ownerId === ownGroup?.ownerId)
               setViewerIndex(idx)
             } else {
               setComposerOpen(true)
@@ -57,7 +74,7 @@ export function StoryBar() {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
               if (ownHasStory) {
-                const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
+                const idx = normalizedGroups.findIndex((g) => g.ownerId === ownGroup?.ownerId)
                 setViewerIndex(idx)
               } else {
                 setComposerOpen(true)
@@ -105,7 +122,7 @@ export function StoryBar() {
 
         {/* Other users' stories — Facebook-style rectangular cards */}
         {otherGroups.map((g) => {
-          const idx = groups.findIndex((x) => x.ownerId === g.ownerId)
+          const idx = normalizedGroups.findIndex((x) => x.ownerId === g.ownerId)
           const latest = g.stories?.[g.stories.length - 1]
           const preview = latest?.mediaType === 'image' ? latest.mediaUrl : undefined
           return (
@@ -156,9 +173,9 @@ export function StoryBar() {
       <StoryComposer open={composerOpen} onClose={() => setComposerOpen(false)} />
 
       {/* Viewer */}
-      {viewerIndex !== null && groups[viewerIndex] && (
+      {viewerIndex !== null && normalizedGroups[viewerIndex] && (
         <StoryViewer
-          groups={groups}
+          groups={normalizedGroups}
           initialGroupIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}
         />
