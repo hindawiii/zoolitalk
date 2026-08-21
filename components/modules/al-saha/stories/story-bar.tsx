@@ -42,7 +42,9 @@ export function StoryBar() {
     <div dir="rtl" className="py-3 border-b border-[#2D5A27]/15 bg-white dark:bg-card w-full">
       <div className="flex gap-2.5 px-3 overflow-x-auto scrollbar-hide w-full">
         {/* Add Story / Own story — Facebook-style rectangular card */}
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => {
             if (ownHasStory) {
               const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
@@ -51,8 +53,19 @@ export function StoryBar() {
               setComposerOpen(true)
             }
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              if (ownHasStory) {
+                const idx = groups.findIndex((g) => g.ownerId === currentUser?.id)
+                setViewerIndex(idx)
+              } else {
+                setComposerOpen(true)
+              }
+            }
+          }}
           aria-label={ownHasStory ? 'عرض قصتك' : 'إضافة قصة'}
-          className="relative flex-shrink-0 h-40 w-24 overflow-hidden rounded-xl border border-[#2D5A27]/15 bg-[#2D5A27]/5 shadow-sm"
+          className="relative flex-shrink-0 h-40 w-24 overflow-hidden rounded-xl border border-[#2D5A27]/15 bg-[#2D5A27]/5 shadow-sm cursor-pointer"
         >
           {/* Top image / avatar area */}
           <div className="relative h-[68%] w-full overflow-hidden bg-[#2D5A27]/10">
@@ -77,18 +90,18 @@ export function StoryBar() {
           </div>
 
           {/* + badge (centered on the divider) */}
-          {!ownHasStory && (
-            <span
-              onClick={(e) => {
-                e.stopPropagation()
-                setComposerOpen(true)
-              }}
-              className="absolute bottom-[26%] left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#2D5A27] border-[3px] border-white dark:border-card"
-            >
-              <Plus className="h-3.5 w-3.5 text-white" />
-            </span>
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setComposerOpen(true)
+            }}
+            aria-label="إضافة قصة جديدة"
+            className="absolute bottom-[26%] left-1/2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-[#2D5A27] border-[3px] border-white dark:border-card transition-transform hover:scale-110 active:scale-95"
+          >
+            <Plus className="h-3.5 w-3.5 text-white" />
+          </button>
+        </div>
 
         {/* Other users' stories — Facebook-style rectangular cards */}
         {otherGroups.map((g) => {
