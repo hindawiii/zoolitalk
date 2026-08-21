@@ -203,15 +203,12 @@ export function StoryViewer({ groups, initialGroupIndex, onClose }: StoryViewerP
               style={{
                 left: `${t.xPct}%`,
                 top: `${t.yPct}%`,
-                transform: `translate(-50%, -50%) rotate(${t.rotation ?? 0}deg) scale(${t.scale ?? 1})`,
+                transform: 'translate(-50%, -50%)',
                 color: t.color,
-                fontFamily: t.fontFamily ?? 'var(--font-arabic)',
                 fontWeight: t.bold ? 700 : 400,
                 fontStyle: t.italic ? 'italic' : 'normal',
                 fontSize: t.size,
-                letterSpacing: `${t.letterSpacing ?? 0}px`,
-                textShadow: t.shadow === false ? 'none' : '0 1px 6px rgba(0,0,0,0.5)',
-                WebkitTextStroke: t.outline ? '1px currentColor' : undefined,
+                textShadow: '0 1px 6px rgba(0,0,0,0.5)',
               }}
             >
               <span className="font-arabic">{t.text}</span>

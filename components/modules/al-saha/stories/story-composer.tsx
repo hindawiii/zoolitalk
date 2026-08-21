@@ -15,11 +15,6 @@ import {
   Bold,
   Italic,
   Crop,
-  MoveUp,
-  MoveDown,
-  MoveLeft,
-  MoveRight,
-  RotateCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -49,17 +44,7 @@ const FILTERS: { id: StoryFilter; label: string }[] = [
   { id: 'vivid', label: 'زاهي' },
 ]
 
-const TEXT_COLORS = ['#FFFFFF', '#111827', '#F8FAFC', '#F43F5E', '#FB7185', '#F97316', '#F59E0B', '#FACC15', '#84CC16', '#22C55E', '#14B8A6', '#06B6D4', '#38BDF8', '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#EC4899', '#D946EF', '#7C2D12']
-const ARABIC_FONTS = [
-  { value: 'var(--font-arabic)', label: 'نسخ عصري' },
-  { value: 'Arial, sans-serif', label: 'سانس حديث' },
-  { value: 'Tahoma, sans-serif', label: 'عربي واضح' },
-  { value: 'Trebuchet MS, sans-serif', label: 'هندسي ناعم' },
-  { value: 'Georgia, serif', label: 'تحريري راقٍ' },
-  { value: 'Times New Roman, serif', label: 'كلاسيكي' },
-  { value: 'Courier New, monospace', label: 'تقني' },
-  { value: 'Impact, sans-serif', label: 'عريض جريء' },
-]
+const TEXT_COLORS = ['#FFFFFF', '#000000', '#2D5A27', '#C9A227']
 const PEN_COLORS = ['#FFFFFF', '#2D5A27', '#C9A227', '#E03131', '#1971C2', '#000000']
 
 const STICKER_OPTIONS: { type: StickerType; icon: string; label: string }[] = [
@@ -212,30 +197,9 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
       bold: true,
       italic: false,
       size: 28,
-      fontFamily: 'var(--font-arabic)',
-      rotation: 0,
-      scale: 1,
-      letterSpacing: 0,
-      shadow: true,
-      outline: false,
-      background: 'transparent',
-      backgroundOpacity: 0,
-      stretch: 1,
     }
     setEditingText(t)
     setTool('text')
-  }
-
-  const updateEditingText = (patch: Partial<StoryTextOverlay>) => {
-    setEditingText((current) => (current ? { ...current, ...patch } : current))
-  }
-
-  const nudgeEditingText = (dx: number, dy: number) => {
-    if (!editingText) return
-    updateEditingText({
-      xPct: Math.min(95, Math.max(5, editingText.xPct + dx)),
-      yPct: Math.min(95, Math.max(5, editingText.yPct + dy)),
-    })
   }
 
   const commitText = () => {
@@ -350,7 +314,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
               <X className="h-5 w-5" />
             </button>
             <h2 className="text-white text-xl font-bold font-arabic">إنشاء قصة</h2>
-            <p className="text-white/60 font-arabic text-sm">اختر صورة أو ��يديو لبدء قصتك</p>
+            <p className="text-white/60 font-arabic text-sm">اختر صورة أو فيديو لبدء قصتك</p>
             <div className="flex flex-col gap-3 w-full max-w-xs">
               <Button
                 onClick={() => cameraInputRef.current?.click()}
@@ -461,17 +425,12 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                     style={{
                       left: `${t.xPct}%`,
                       top: `${t.yPct}%`,
-                      transform: `translate(-50%, -50%) rotate(${t.rotation ?? 0}deg) scale(${t.scale ?? 1}) scaleX(${t.stretch ?? 1})`,
+                      transform: 'translate(-50%, -50%)',
                       color: t.color,
-                      fontFamily: t.fontFamily ?? 'var(--font-arabic)',
                       fontWeight: t.bold ? 700 : 400,
                       fontStyle: t.italic ? 'italic' : 'normal',
                       fontSize: t.size,
-                      letterSpacing: `${t.letterSpacing ?? 0}px`,
-                      transformOrigin: 'center',
-                      scale: `${t.stretch ?? 1} 1`,
-                      textShadow: t.shadow === false ? 'none' : '0 1px 6px rgba(0,0,0,0.5)',
-                      WebkitTextStroke: t.outline ? '1px currentColor' : undefined,
+                      textShadow: '0 1px 6px rgba(0,0,0,0.5)',
                     }}
                   >
                     <span className="font-arabic">{t.text}</span>
@@ -627,20 +586,7 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                     </button>
                   </div>
                   <div className="flex-1 flex items-center justify-center px-6">
-                    <div className="relative w-full max-w-md rounded-2xl border border-white/30 p-3">
-                      <div className="absolute -top-3 -start-3 grid size-7 place-items-center rounded-full bg-[#C9A227] text-black text-xs">↗</div>
-                      <div className="absolute -top-3 -end-3 grid size-7 place-items-center rounded-full bg-[#C9A227] text-black text-xs">↖</div>
-                      <div className="absolute -bottom-3 -start-3 grid size-7 place-items-center rounded-full bg-[#C9A227] text-black text-xs">↘</div>
-                      <div className="absolute -bottom-3 -end-3 grid size-7 place-items-center rounded-full bg-[#C9A227] text-black text-xs">↙</div>
-                      <button
-                        type="button"
-                        aria-label="تدوير النص"
-                        onClick={() => updateEditingText({ rotation: (editingText?.rotation ?? 0) + 15 })}
-                        className="absolute -top-3 left-1/2 grid size-7 -translate-x-1/2 place-items-center rounded-full bg-white text-black"
-                      >
-                        <RotateCw className="size-4" />
-                      </button>
-                      <textarea
+                    <textarea
                       autoFocus
                       value={editingText.text}
                       onChange={(e) => setEditingText({ ...editingText, text: e.target.value })}
@@ -649,16 +595,12 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                       className="w-full bg-transparent text-center resize-none outline-none font-arabic placeholder:text-white/40"
                       style={{
                         color: editingText.color,
-                        fontFamily: editingText.fontFamily ?? 'var(--font-arabic)',
                         fontWeight: editingText.bold ? 700 : 400,
                         fontStyle: editingText.italic ? 'italic' : 'normal',
-                        fontSize: editingText.size * (editingText.scale ?? 1),
-                        letterSpacing: `${editingText.letterSpacing ?? 0}px`,
-                        textShadow: editingText.shadow === false ? 'none' : '0 1px 6px rgba(0,0,0,0.5)',
-                        WebkitTextStroke: editingText.outline ? '1px currentColor' : undefined,
+                        fontSize: editingText.size,
+                        textShadow: '0 1px 6px rgba(0,0,0,0.5)',
                       }}
                     />
-                    </div>
                   </div>
                   {/* text controls */}
                   <div className="p-4 flex flex-col gap-4">
@@ -684,48 +626,19 @@ export function StoryComposer({ open, onClose, onPublished }: StoryComposerProps
                         <Italic className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {ARABIC_FONTS.map((font) => (
-                        <button
-                          key={font.value}
-                          onClick={() => setEditingText({ ...editingText, fontFamily: font.value })}
-                          className={cn('shrink-0 rounded-full px-3 py-2 text-xs text-white', editingText.fontFamily === font.value ? 'bg-[#C9A227] text-black' : 'bg-white/15')}
-                          style={{ fontFamily: font.value }}
-                        >{font.label}</button>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1">
+                    <div className="flex items-center justify-center gap-3">
                       {TEXT_COLORS.map((c) => (
-                        <button key={c} onClick={() => setEditingText({ ...editingText, color: c })} aria-label={`لون ${c}`} className={cn('h-8 w-8 shrink-0 rounded-full border-2', editingText.color === c ? 'border-[#C9A227] scale-110' : 'border-white/40')} style={{ backgroundColor: c }} />
+                        <button
+                          key={c}
+                          onClick={() => setEditingText({ ...editingText, color: c })}
+                          aria-label={`لون ${c}`}
+                          className={cn(
+                            'h-8 w-8 rounded-full border-2',
+                            editingText.color === c ? 'border-[#C9A227] scale-110' : 'border-white/40',
+                          )}
+                          style={{ backgroundColor: c }}
+                        />
                       ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-white text-xs font-arabic">
-                      <label className="flex items-center gap-2">الحجم
-                        <input type="range" min="14" max="72" value={editingText.size} onChange={(e) => setEditingText({ ...editingText, size: Number(e.target.value) })} className="w-full accent-[#C9A227]" />
-                      </label>
-                      <label className="flex items-center gap-2">تمديد الحروف
-                        <input type="range" min="0" max="18" value={editingText.letterSpacing ?? 0} onChange={(e) => updateEditingText({ letterSpacing: Number(e.target.value) })} className="w-full accent-[#C9A227]" />
-                      </label>
-                      <label className="flex items-center gap-2">عرض الكلمة
-                        <input type="range" min="0.7" max="1.8" step="0.05" value={editingText.stretch ?? 1} onChange={(e) => updateEditingText({ stretch: Number(e.target.value) })} className="w-full accent-[#C9A227]" />
-                      </label>
-                      <label className="flex items-center gap-2">تكبير
-                        <input type="range" min="0.5" max="2.5" step="0.05" value={editingText.scale ?? 1} onChange={(e) => setEditingText({ ...editingText, scale: Number(e.target.value) })} className="w-full accent-[#C9A227]" />
-                      </label>
-                      <label className="flex items-center gap-2">تدوير
-                        <input type="range" min="-180" max="180" value={editingText.rotation ?? 0} onChange={(e) => setEditingText({ ...editingText, rotation: Number(e.target.value) })} className="w-full accent-[#C9A227]" />
-                      </label>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 text-white text-xs font-arabic">
-                      <button onClick={() => nudgeEditingText(-2, 0)} className="rounded-full bg-white/15 p-2" aria-label="تحريك يسار"><MoveLeft className="size-4" /></button>
-                      <button onClick={() => nudgeEditingText(0, -2)} className="rounded-full bg-white/15 p-2" aria-label="تحريك أعلى"><MoveUp className="size-4" /></button>
-                      <button onClick={() => nudgeEditingText(0, 2)} className="rounded-full bg-white/15 p-2" aria-label="تحريك أسفل"><MoveDown className="size-4" /></button>
-                      <button onClick={() => nudgeEditingText(2, 0)} className="rounded-full bg-white/15 p-2" aria-label="تحريك يمين"><MoveRight className="size-4" /></button>
-                      <button onClick={() => updateEditingText({ rotation: (editingText.rotation ?? 0) + 15 })} className="rounded-full bg-white/15 p-2" aria-label="تدوير"><RotateCw className="size-4" /></button>
-                    </div>
-                    <div className="flex items-center justify-center gap-2 text-white text-xs font-arabic">
-                      <button onClick={() => setEditingText({ ...editingText, shadow: editingText.shadow === false })} className={cn('rounded-full px-3 py-2', editingText.shadow === false ? 'bg-white/15' : 'bg-[#2D5A27]')}>ظل</button>
-                      <button onClick={() => setEditingText({ ...editingText, outline: !editingText.outline })} className={cn('rounded-full px-3 py-2', editingText.outline ? 'bg-[#2D5A27]' : 'bg-white/15')}>حد</button>
                     </div>
                   </div>
                 </motion.div>
