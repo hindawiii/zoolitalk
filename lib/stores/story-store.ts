@@ -18,6 +18,12 @@ export interface StoryTextOverlay {
   bold: boolean
   italic: boolean
   size: number // px
+  fontFamily?: string
+  rotation?: number
+  scale?: number
+  letterSpacing?: number
+  shadow?: boolean
+  outline?: boolean
 }
 
 export type StickerType = 'emoji' | 'poll' | 'question' | 'countdown' | 'music'
